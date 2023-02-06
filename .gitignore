@@ -1,5 +1,7 @@
 # custom
 calculations/
+results/
+*.png
 
 
 # Byte-compiled / optimized / DLL files

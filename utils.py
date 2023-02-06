@@ -9,9 +9,6 @@ from tempfile import mkdtemp
 
 from log import logger
 
-
-BASE_DIR = '/home/ruard/code/virtual_reactions/calculations/'
-
 class Atom:
     def __init__(self, type, x, y, z) -> None:
         self.type = type
@@ -78,6 +75,8 @@ def work_in_tmp_dir(
         @wraps(func)
         def wrapped_function(*args, **kwargs):
             here = os.getcwd()
+
+            BASE_DIR = os.environ["BASE_DIR"]
 
             if BASE_DIR is not None:
                 assert os.path.exists(BASE_DIR)

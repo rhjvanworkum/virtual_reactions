@@ -116,7 +116,16 @@ def get_hs(ts_geometry, indices):
 
     if len(hs) > 3:
         print('C has more than 3 hydrogen bonded to them!')
-        raise ValueError("notallowedC")
+        hs = []
+        for (idx, atom) in total_hs:
+            if np.linalg.norm(ts_geometry[indices.attacked_atom_idx].coordinates - atom.coordinates) < 1.1:
+                hs.append(idx)
+
+        if len(hs) > 3:
+            hs = []
+            for (idx, atom) in total_hs:
+                if np.linalg.norm(ts_geometry[indices.attacked_atom_idx].coordinates - atom.coordinates) < 1.0:
+                    hs.append(idx)
 
     return hs
 
@@ -165,25 +174,28 @@ class E2ReactionTemplate(ReactionTemplate):
 
         # get close by H's
         hs_indices = get_hs(ts_geometry, indices)
-        h_idx = get_opposite_hydrogen(ts_geometry, indices, hs_indices)
+        if len(hs_indices) != 0:
+            h_idx = get_opposite_hydrogen(ts_geometry, indices, hs_indices)
 
-        # 1. scale distance vector of leaving group
-        diff_vec = ts_geometry[indices.leaving_group_idx].coordinates - ts_geometry[indices.central_atom_idx].coordinates
-        diff_vec /= np.linalg.norm(diff_vec)
-        ts_geometry[indices.leaving_group_idx].coordinates = ts_geometry[indices.central_atom_idx].coordinates + self.d_leaving_group * diff_vec
+            # 1. scale distance vector of leaving group
+            diff_vec = ts_geometry[indices.leaving_group_idx].coordinates - ts_geometry[indices.central_atom_idx].coordinates
+            diff_vec /= np.linalg.norm(diff_vec)
+            ts_geometry[indices.leaving_group_idx].coordinates = ts_geometry[indices.central_atom_idx].coordinates + self.d_leaving_group * diff_vec
 
-        # 2. set hydrogen distance
-        diff_vec = ts_geometry[h_idx].coordinates - ts_geometry[indices.attacked_atom_idx].coordinates
-        diff_vec /= np.linalg.norm(diff_vec)
-        ts_geometry[h_idx].coordinates = ts_geometry[indices.attacked_atom_idx].coordinates + self.d_H * diff_vec
+            # 2. set hydrogen distance
+            diff_vec = ts_geometry[h_idx].coordinates - ts_geometry[indices.attacked_atom_idx].coordinates
+            diff_vec /= np.linalg.norm(diff_vec)
+            ts_geometry[h_idx].coordinates = ts_geometry[indices.attacked_atom_idx].coordinates + self.d_H * diff_vec
 
-        # 3. set nucleohpile distance
-        ts_geometry[indices.nucleophile_idx].coordinates = ts_geometry[indices.attacked_atom_idx].coordinates + (self.d_H + self.d_nucleophile) * diff_vec
+            # 3. set nucleohpile distance
+            ts_geometry[indices.nucleophile_idx].coordinates = ts_geometry[indices.attacked_atom_idx].coordinates + (self.d_H + self.d_nucleophile) * diff_vec
 
-        constraints = [
-            ((indices.central_atom_idx, indices.leaving_group_idx), self.d_leaving_group),
-            ((indices.attacked_atom_idx, h_idx), self.d_H),
-            ((h_idx, indices.nucleophile_idx), self.d_nucleophile)
-        ]
+            constraints = [
+                ((indices.central_atom_idx, indices.leaving_group_idx), self.d_leaving_group),
+                ((indices.attacked_atom_idx, h_idx), self.d_H),
+                ((h_idx, indices.nucleophile_idx), self.d_nucleophile)
+            ]
+        else:
+            ts_geometry, constraints = None, None
 
         return ts_geometry, constraints

@@ -1,6 +1,5 @@
-from typing import List
 import os
-import concurrent
+from typing import List
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from XTB import run_xtb
 import numpy as np
@@ -10,6 +9,7 @@ import rdkit
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
+
 from utils import Atom, write_xyz_file
 
 def convert_rdkit_conformer(
@@ -105,15 +105,16 @@ class Compound:
             (self, keywords, idx, method, solvent, xcontrol_file) for idx in range(len(self.conformers))
         ]
 
-        # results = [run_xtb(args) for args in xtb_arguments]
-        with ProcessPoolExecutor(max_workers=num_cpu) as executor:
-            results = executor.map(run_xtb, xtb_arguments)
+        results = [run_xtb(args) for args in xtb_arguments]
+        # with ProcessPoolExecutor(max_workers=num_cpu) as executor:
+        #     results = executor.map(run_xtb, xtb_arguments)
 
         energies, geometries = [], []
         for result in results:
             energy, geometry = result
-            energies.append(energy)
-            geometries.append(geometry)
+            if energy is not None and geometry is not None:
+                energies.append(energy)
+                geometries.append(geometry)
         
         energies = np.array(energies)
         rel_energies = energies - np.min(energies) #covert to relative energies

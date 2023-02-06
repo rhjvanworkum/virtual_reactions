@@ -7,9 +7,6 @@ from typing import Any, List
 from utils import read_xyz_file, run_external, run_in_tmp_environment, work_in_tmp_dir
 from log import logger
 
-XTB_PATH = "/home/ruard/Programs/xtb-6.5.1/bin/xtb"
-n_cores = 4
-
 def run_xtb(args):
     (molecule, keywords, conformer_idx, method, solvent, xcontrol_file) = args
     return xtb(molecule, keywords, conformer_idx, method, solvent, xcontrol_file)
@@ -56,7 +53,7 @@ def xtb(
 
         molecule.to_xyz('mol.xyz', conformer_idx)
 
-        cmd = f'{XTB_PATH} mol.xyz {" ".join(flags)}'
+        cmd = f'{os.environ["XTB_PATH"]} mol.xyz {" ".join(flags)}'
         proc = subprocess.Popen(
             cmd.split(), 
             stdout=subprocess.PIPE, 
@@ -65,13 +62,15 @@ def xtb(
         )
         output = proc.communicate()[0]
 
+        energy = None
         for line in reversed(output.split('\n')):
             if "total E" in line:
                 energy = float(line.split()[-1])
             if "TOTAL ENERGY" in line:
                 energy = float(line.split()[-3])
 
-        if '--opt' in keywords:
+        if '--opt' in keywords and os.path.exists('xtbopt.xyz'):
+            # print(os.getcwd())
             final_geometry = read_xyz_file('xtbopt.xyz')
         else:
             final_geometry = None
