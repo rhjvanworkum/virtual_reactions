@@ -2,6 +2,7 @@
 calculations/
 results/
 *.png
+*.out
 
 
 # Byte-compiled / optimized / DLL files

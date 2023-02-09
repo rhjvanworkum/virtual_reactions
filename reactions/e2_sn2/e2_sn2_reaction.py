@@ -2,7 +2,7 @@ from typing import Any, List, Tuple, Union
 from XTB import xtb
 
 from compound import Compound, Conformation
-from e2_sn2_reaction.template import E2ReactionTemplate, E2Sn2ReactionIndices, ReactionTemplate, Sn2ReactionTemplate
+from reactions.e2_sn2.template import E2Sn2ReactionIndices, ReactionTemplate
 from utils import Atom
 
 FORCE_CONSTANT = 2
@@ -28,7 +28,7 @@ class E2Sn2Reaction:
         reaction_complex_templates: List[ReactionTemplate],
         transition_state_templates: List[ReactionTemplate]
     ) -> None:
-        self.substrate = Compound(substrate_smiles)
+        self.substrate = Compound.from_smiles(substrate_smiles)
         self.substrate.generate_conformers()
         self.substrate.optimize_conformers()
 
@@ -123,8 +123,8 @@ class E2Sn2Reaction:
                 if ts_energy is not None and rc_energy is not None:
                     barrier = (ts_energy - rc_energy)
                 else:
-                    barrier = 1e5
-
+                    barrier = 1e6
+                    
                 reaction_barriers[-1].append(barrier)
 
         return reaction_barriers

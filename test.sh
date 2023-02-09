@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python run_regression.py
+python test.py

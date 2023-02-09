@@ -1,15 +1,14 @@
 from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 import ast
-from e2_sn2_reaction.template import E2ReactionTemplate, Sn2ReactionTemplate
+from reactions.e2_sn2.template import E2ReactionTemplate, Sn2ReactionTemplate
+from reactions.e2_sn2.e2_sn2_reaction import E2Sn2Reaction
 import numpy as np
 import sklearn
 from sklearn.metrics import accuracy_score, roc_auc_score
 import os
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-
-from e2_sn2_reaction.e2_sn2_reaction import E2Sn2Reaction
 
 BASE_DIR = '/home/rhjvanworkum/virtual_reactions/calculations/'
 XTB_PATH = "/home/rhjvanworkum/xtb-6.5.1/bin/xtb"
@@ -110,6 +109,8 @@ def run_experiment(
             pred = 1 # sn2
         preds.append(pred)
 
+    print(preds)
+
     print(f'Name: {name}')
     print('Accuracy: ', accuracy_score(labels, preds))
     print('Roc AUC: ', roc_auc_score(labels, preds))
@@ -128,15 +129,15 @@ def run_experiment(
     plt.clf()
 
 if __name__ == "__main__":
-    rc_sn2_d_nucs = [2.0, 1.5]
-    rc_sn2_d_leavs = [1.2, 1.4]
-    rc_e2_d_nucs = [2.0]
-    rc_e2_d_leavs = [1.2]
+    rc_sn2_d_nucs = [1.5]
+    rc_sn2_d_leavs = [1.2]
+    ts_sn2_d_nucs = [1.5]
+    ts_sn2_d_leavs = [1.8]
 
-    ts_sn2_d_nucs = [1.5, 1.2]
-    ts_sn2_d_leavs = [1.4, 1.8]
+    rc_e2_d_nucs = [3]
+    rc_e2_d_leavs = [1.2]
     ts_e2_d_nucs = [1.5]
-    ts_e2_d_leavs = [1.4]
+    ts_e2_d_leavs = [1.8]
 
     idx = 0
 

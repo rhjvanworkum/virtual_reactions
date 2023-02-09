@@ -46,15 +46,20 @@ class Compound:
 
     def __init__(
         self,
-        smiles: str
+        rdkit_mol: Chem.Mol
     ) -> None:
-        self.rdkit_mol = Chem.MolFromSmiles(smiles)
-        self.rdkit_mol = Chem.AddHs(self.rdkit_mol)
+        self.rdkit_mol = rdkit_mol
 
         self.charge = Chem.rdmolops.GetFormalCharge(self.rdkit_mol)
         self.mult = 0
 
         self.conformers = []
+
+    @classmethod
+    def from_smiles(cls, smiles: str):
+        rdkit_mol = Chem.MolFromSmiles(smiles)
+        rdkit_mol = Chem.AddHs(rdkit_mol)
+        return cls(rdkit_mol)
 
     def to_xyz(
         self, 

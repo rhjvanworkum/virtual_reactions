@@ -1,8 +1,6 @@
 import os
 from reactions.eas.eas_dataset import Dataset, XtbSimulatedEasDataset
 
-from reactions.eas.eas_reaction import EASReaction
-
 BASE_DIR = '/home/rhjvanworkum/virtual_reactions/calculations/'
 BASE_PATH = '/home/rhjvanworkum/virtual_reactions/'
 XTB_PATH = "/home/rhjvanworkum/xtb-6.5.1/bin/xtb"
