@@ -4,7 +4,7 @@ import subprocess
 from typing import Any, List
 
 
-from utils import read_xyz_file, run_external, run_in_tmp_environment, work_in_tmp_dir
+from src.utils import read_xyz_file, run_external, run_in_tmp_environment, work_in_tmp_dir
 from log import logger
 
 def run_xtb(args):
@@ -80,7 +80,7 @@ def xtb(
     return energy, final_geometry 
 
 if __name__ == "__main__":
-    from compound import Compound
+    from src.compound import Compound
     mol = Compound('CC')
     mol.generate_conformers()
 
