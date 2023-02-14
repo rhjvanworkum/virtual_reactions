@@ -3,6 +3,7 @@ calculations/
 results/
 *.png
 *.out
+tests/
 
 
 # Byte-compiled / optimized / DLL files

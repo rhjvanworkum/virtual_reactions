@@ -34,7 +34,7 @@ def construct_templates(
         E2ReactionTemplate(
             d_nucleophile=e2_d_nuc,
             d_leaving_group=e2_d_leav,
-            d_H=1.22
+            d_H=1
         )
     ]
 
@@ -49,7 +49,7 @@ def construct_templates(
         E2ReactionTemplate(
             d_nucleophile=e2_d_nuc,
             d_leaving_group=e2_d_leav,
-            d_H=1.22
+            d_H=1
         )
     ]
 
@@ -129,15 +129,17 @@ def run_experiment(
     plt.clf()
 
 if __name__ == "__main__":
+    # this had a pcc of 0.58
     rc_sn2_d_nucs = [1.5]
     rc_sn2_d_leavs = [1.2]
     ts_sn2_d_nucs = [1.5]
     ts_sn2_d_leavs = [1.8]
 
-    rc_e2_d_nucs = [3]
-    rc_e2_d_leavs = [1.2]
-    ts_e2_d_nucs = [1.5]
-    ts_e2_d_leavs = [1.8]
+    # this had a pcc of 0.22
+    rc_e2_d_nucs = [1]
+    rc_e2_d_leavs = [1]
+    ts_e2_d_nucs = [1]
+    ts_e2_d_leavs = [1.97]
 
     idx = 0
 

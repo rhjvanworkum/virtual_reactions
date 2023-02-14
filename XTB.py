@@ -70,7 +70,6 @@ def xtb(
                 energy = float(line.split()[-3])
 
         if '--opt' in keywords and os.path.exists('xtbopt.xyz'):
-            # print(os.getcwd())
             final_geometry = read_xyz_file('xtbopt.xyz')
         else:
             final_geometry = None

@@ -10,8 +10,8 @@ from compound import Compound, Conformation
 
 class EASReaction:
     rxns = [
-        AllChem.ReactionFromSmarts('[C;R:1]([Br])=[C,N;R;H1:2]>>[C,R:1][*H+:2]'),
-        AllChem.ReactionFromSmarts('[C,R:1](Br)=[C,N;R;H0:2]>>[C,R:1][*H+:2]')
+        AllChem.ReactionFromSmarts('[C,c:1](Br)=[C,c:2]>>[C,c:1]-[C+,c+:2]'),
+        AllChem.ReactionFromSmarts('[C,c:1](Br)=[N,n:2]>>[C,c:1]-[NH0+,nH0+:2]')
     ]
 
     def __init__(
@@ -53,7 +53,7 @@ class EASReaction:
             energy, _ = xtb(
                 molecule=molecule,
                 conformer_idx=conformer_idx,
-                keywords=[],
+                keywords=['--opt'],
                 method='2',
                 solvent='Methanol',
                 xcontrol_file=None

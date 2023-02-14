@@ -110,9 +110,9 @@ class Compound:
             (self, keywords, idx, method, solvent, xcontrol_file) for idx in range(len(self.conformers))
         ]
 
-        results = [run_xtb(args) for args in xtb_arguments]
-        # with ProcessPoolExecutor(max_workers=num_cpu) as executor:
-        #     results = executor.map(run_xtb, xtb_arguments)
+        # results = [run_xtb(args) for args in xtb_arguments]
+        with ProcessPoolExecutor(max_workers=num_cpu) as executor:
+            results = executor.map(run_xtb, xtb_arguments)
 
         energies, geometries = [], []
         for result in results:

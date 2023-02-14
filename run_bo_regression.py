@@ -14,6 +14,7 @@ from skopt.space import Real
 
 from reactions.e2_sn2.e2_sn2_reaction import E2Sn2Reaction
 from reactions.e2_sn2.template import E2ReactionTemplate, Sn2ReactionTemplate
+from run_regression import HARTREE_TO_KCAL
 
 BASE_DIR = '/home/rhjvanworkum/virtual_reactions/calculations/'
 XTB_PATH = "/home/rhjvanworkum/xtb-6.5.1/bin/xtb"
@@ -74,16 +75,42 @@ def construct_templates(
 
     return rc_templates, ts_templates
 
+def get_templates_e2(
+    rc_e2_d_nuc: float = 1.2,
+    rc_e2_d_leav: float = 1.5,
+    rc_e2_d_H: float = 1.22,
+    ts_e2_d_nuc: float = 1.2,
+    ts_e2_d_leav: float = 1.5,
+    ts_e2_d_H: float = 1.22,
+):
+    rc_templates = [
+        E2ReactionTemplate(
+            d_nucleophile=rc_e2_d_nuc,
+            d_leaving_group=rc_e2_d_leav,
+            d_H=rc_e2_d_H
+        )
+    ]
+
+    ts_templates = [
+        E2ReactionTemplate(
+            d_nucleophile=ts_e2_d_nuc,
+            d_leaving_group=ts_e2_d_leav,
+            d_H=ts_e2_d_H
+        )
+    ]
+
+    return rc_templates, ts_templates
+
 class XtbSimulationEstimator(BaseEstimator):
 
     def __init__(
         self,
-        rc_sn2_d_nuc: float = 1.0,
-        rc_sn2_d_leav: float = 1.0,
-        rc_sn2_angle: int = 180,
-        ts_sn2_d_nuc: float = 1.0,
-        ts_sn2_d_leav: float = 1.0,
-        ts_sn2_angle: int = 180,
+        # rc_sn2_d_nuc: float = 1.0,
+        # rc_sn2_d_leav: float = 1.0,
+        # rc_sn2_angle: int = 180,
+        # ts_sn2_d_nuc: float = 1.0,
+        # ts_sn2_d_leav: float = 1.0,
+        # ts_sn2_angle: int = 180,
         rc_e2_d_nuc: float = 1.0,
         rc_e2_d_leav: float = 1.0,
         rc_e2_d_H: float = 1.22,
@@ -91,12 +118,12 @@ class XtbSimulationEstimator(BaseEstimator):
         ts_e2_d_leav: float = 1.0,
         ts_e2_d_H: float = 1.22,
     ) -> None:
-        self.rc_sn2_d_nuc = rc_sn2_d_nuc
-        self.rc_sn2_d_leav = rc_sn2_d_leav
-        self.rc_sn2_angle = rc_sn2_angle
-        self.ts_sn2_d_nuc = ts_sn2_d_nuc
-        self.ts_sn2_d_leav = ts_sn2_d_leav
-        self.ts_sn2_angle = ts_sn2_angle
+        # self.rc_sn2_d_nuc = rc_sn2_d_nuc
+        # self.rc_sn2_d_leav = rc_sn2_d_leav
+        # self.rc_sn2_angle = rc_sn2_angle
+        # self.ts_sn2_d_nuc = ts_sn2_d_nuc
+        # self.ts_sn2_d_leav = ts_sn2_d_leav
+        # self.ts_sn2_angle = ts_sn2_angle
 
         self.rc_e2_d_nuc = rc_e2_d_nuc
         self.rc_e2_d_leav = rc_e2_d_leav
@@ -109,9 +136,13 @@ class XtbSimulationEstimator(BaseEstimator):
         return self
 
     def predict(self, X) -> None:
-        rc_templates, ts_templates = construct_templates(
-            rc_args=(self.rc_sn2_d_nuc, self.rc_sn2_d_leav, self.rc_sn2_angle, self.rc_e2_d_nuc, self.rc_e2_d_leav, self.rc_e2_d_H),
-            ts_args=(self.ts_sn2_d_nuc, self.ts_sn2_d_leav, self.ts_sn2_angle, self.ts_e2_d_nuc, self.ts_e2_d_leav, self.ts_e2_d_H)
+        rc_templates, ts_templates = get_templates_e2(
+            rc_e2_d_nuc=self.rc_e2_d_nuc,
+            rc_e2_d_leav=self.rc_e2_d_leav,
+            rc_e2_d_H=self.rc_e2_d_H,
+            ts_e2_d_nuc=self.ts_e2_d_nuc,
+            ts_e2_d_leav=self.ts_e2_d_leav,
+            ts_e2_d_H=self.ts_e2_d_H
         )
 
         arguments = []
@@ -121,48 +152,40 @@ class XtbSimulationEstimator(BaseEstimator):
         with ProcessPoolExecutor(max_workers=N_CPUS) as executor:
             results = list(tqdm(executor.map(get_reaction_barriers, arguments), total=len(arguments)))
 
-        sn2_energies, e2_energies = [], []
-        for energies in results:
-            sn2_energies.append(np.min(energies[:, 0]))
-            e2_energies.append(np.min(energies[:, 1]))
-
-        preds = []
-        for idx in range(len(sn2_energies)):
-            if e2_energies[idx] < sn2_energies[idx]:
-                pred = 0 # e2
-            else:
-                pred = 1 # sn2
-            preds.append(pred)       
+        preds = [np.min(energies[:, 0]) * HARTREE_TO_KCAL for energies in results]
 
         return preds
 
 if __name__ == "__main__":
-    class_data = pd.read_csv('./data/e2_sn2_classification_dataset.csv')
+    reg_data = pd.read_csv('./data/regression_dataset.csv')
+    reg_data = reg_data[reg_data['reaction_type'] == 'e2']
 
-    X = [(row['smiles'].split('.')[0], row['smiles'].split('.')[1], ast.literal_eval(row['products_run'])) for _, row in class_data.iterrows()]
-    Y = [int(len(ast.literal_eval(row['products_run'])[0]) == 3) for _, row in class_data.iterrows()]
+    X = [(row['smiles'].split('.')[0], row['smiles'].split('.')[1], ast.literal_eval(row['reaction_core'])) for _, row in reg_data.iterrows()]
+    Y = [float(row['activation_energy']) for _, row in reg_data.iterrows()]
 
     def scoring_fn(estimator, Xtest, Ytest):
-        preds = estimator.predict(X)
-        return roc_auc_score(Y, preds)
+        _preds = estimator.predict(X)
 
+        true, preds = [], []
+        for t, pred in zip(Y, _preds):
+            if pred < 1e5:
+                true.append(t)
+                preds.append(pred)
+        corr = np.corrcoef(np.array(true).flatten(), np.array(preds).flatten())
+        return corr[0, 1]
+
+    # n_iter is total: iter * n_points
     opt = BayesSearchCV(
         XtbSimulationEstimator(),
         {
-            'rc_sn2_d_nuc': Real(0.5, 2.2, prior='uniform'),
-            'rc_sn2_d_leav': Real(0.5, 2.2, prior='uniform'),
-            # 'rc_sn2_angle': Integer(120, 240, prior='uniform'),
-            'ts_sn2_d_nuc': Real(0.5, 2.2, prior='uniform'),
-            'ts_sn2_d_leav': Real(0.5, 2.2, prior='uniform'),
-            # 'ts_sn2_angle': Integer(120, 240, prior='uniform'),
-            'rc_e2_d_nuc': Real(0.5, 2.2, prior='uniform'),
-            'rc_e2_d_leav': Real(0.5, 2.2, prior='uniform'),
-            'rc_e2_d_H': Real(0.5, 2.2, prior='uniform'),
-            'ts_e2_d_nuc': Real(0.5, 2.2, prior='uniform'),
-            'ts_e2_d_leav': Real(0.5, 2.2, prior='uniform'),
-            'ts_e2_d_H': Real(0.5, 2.2, prior='uniform'),
+            'rc_e2_d_nuc': Real(1.0, 2.0, prior='uniform'),
+            'rc_e2_d_leav': Real(1.0, 2.0, prior='uniform'),
+            'rc_e2_d_H': Real(1.0, 2.0, prior='uniform'),
+            'ts_e2_d_nuc': Real(1.0, 2.0, prior='uniform'),
+            'ts_e2_d_leav': Real(1.0, 2.0, prior='uniform'),
+            'ts_e2_d_H': Real(1.0, 2.0, prior='uniform'),
         },
-        n_iter=12,
+        n_iter=100,
         n_points=5,
         # pre_dispatch=1,
         n_jobs=1,

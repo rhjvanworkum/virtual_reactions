@@ -5,20 +5,21 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 def parse_eas_reactions(data):
-    # TODO: what if there is 2 positive reaction sites?
     rxns = [
         AllChem.ReactionFromSmarts('[C;R;H1:1]=[C,N;R;H1:2]>>[C;R:1](Br)=[C,N;R;H1:2]'),
         AllChem.ReactionFromSmarts('[C;R;H1:1]=[C,N;R;H0:2]>>[C,R:1](Br)=[C,N;R;H0:2]')
     ]
 
+    reaction_idxs = []
     substrates = []
     reaction_products = []
     label = []
     simulation_idx = []
 
+    idx = 0
     for _, row in data.iterrows():
         substrate_smiles = row[0]
-        pos_reacting_site = int(row[1][0])
+        pos_reacting_sites = [int(idx) for idx in row[1].split(',') if len(idx) > 0]
 
         # create mol
         mol = Chem.MolFromSmiles(substrate_smiles)
@@ -43,12 +44,16 @@ def parse_eas_reactions(data):
 
                 # append reaction to dataset
                 if reacting_site_idx is not None:
+                    reaction_idxs.append(idx)
                     substrates.append(f'{substrate_smiles}.[Br+]')
                     reaction_products.append(Chem.MolToSmiles(product_mol))
-                    label.append(int(reacting_site_idx == pos_reacting_site))
+                    label.append(int(reacting_site_idx in pos_reacting_sites))
                     simulation_idx.append(0) 
+                    idx += 1
 
     return pd.DataFrame.from_dict({
+        'uid': reaction_idxs,
+        'reaction_idx': reaction_idxs,
         'substrates': substrates,
         'products': reaction_products,
         'label': label,
@@ -59,4 +64,4 @@ def parse_eas_reactions(data):
 if __name__ == "__main__":
     data = pd.read_csv('./data/eas_compound_smiles.csv', sep=' ', header=None)
     df = parse_eas_reactions(data)
-    df.to_csv('./data/datasets/eas_dataset.csv')
+    df.to_csv('./data/datasets/eas_dataset_2.csv')

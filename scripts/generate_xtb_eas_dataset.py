@@ -13,11 +13,11 @@ os.environ["XTB_PATH"] = XTB_PATH
 
 
 source_dataset = Dataset(
-    csv_file_path="eas_dataset.csv"
+    csv_file_path="eas_dataset_2.csv"
 )
 
 dataset = XtbSimulatedEasDataset(
-    csv_file_path="xtb_simulated_eas.csv"
+    csv_file_path="xtb_simulated_eas_2_opt_2.csv"
 )
 
 dataset.generate(source_dataset, n_cpus=N_CPUS)
