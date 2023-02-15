@@ -5,9 +5,9 @@ import pandas as pd
 from tqdm import tqdm
 import numpy as np
 import ast
-from rxnmapper import RXNMapper
 
 from reactions.eas.eas_reaction import EASReaction
+from src.dataset import Dataset
 
 
 SIMULATION_IDX_ATOM = ['H', 'He', 'Li', 'Be']
