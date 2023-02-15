@@ -1,5 +1,5 @@
 import os
-from reactions.eas.eas_dataset import Dataset, XtbSimulatedEasDataset
+from src.reactions.eas.eas_dataset import Dataset, XtbSimulatedEasDataset
 from sklearn.metrics import roc_auc_score
 
 BASE_DIR = '/home/rhjvanworkum/virtual_reactions/calculations/'

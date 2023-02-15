@@ -1,5 +1,5 @@
 import os
-from reactions.eas.eas_dataset import Dataset, XtbSimulatedEasDataset
+from src.reactions.eas.eas_dataset import Dataset, XtbSimulatedEasDataset
 
 BASE_DIR = '/home/rhjvanworkum/virtual_reactions/calculations/'
 BASE_PATH = '/home/rhjvanworkum/virtual_reactions/'

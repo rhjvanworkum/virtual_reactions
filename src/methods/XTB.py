@@ -5,7 +5,6 @@ from typing import Any, List
 
 
 from src.utils import read_xyz_file, run_external, run_in_tmp_environment, work_in_tmp_dir
-from log import logger
 
 def run_xtb(args):
     (molecule, keywords, conformer_idx, method, solvent, xcontrol_file) = args

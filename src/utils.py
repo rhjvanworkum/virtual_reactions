@@ -7,8 +7,6 @@ import numpy as np
 from tempfile import mkdtemp
 
 
-from log import logger
-
 class Atom:
     def __init__(self, type, x, y, z) -> None:
         self.type = type
@@ -82,10 +80,6 @@ def work_in_tmp_dir(
                 assert os.path.exists(BASE_DIR)
 
             tmpdir_path = mkdtemp(dir=BASE_DIR)
-            logger.info(f"Creating tmpdir to work in: {tmpdir_path}")
-
-            if len(filenames_to_copy) > 0:
-                logger.info(f"Copying {filenames_to_copy}")
 
             for filename in filenames_to_copy:
                 if filename.endswith("_mol.in"):
@@ -98,20 +92,16 @@ def work_in_tmp_dir(
             os.chdir(tmpdir_path)
 
             try:
-                logger.info("Function   ...running")
                 result = func(*args, **kwargs)
-                logger.info("           ...done")
 
                 for filename in os.listdir(tmpdir_path):
 
                     if any([filename.endswith(ext) for ext in kept_file_exts]):
-                        logger.info(f"Copying back {filename}")
                         shutil.copy(filename, here)
 
             finally:
                 os.chdir(here)
 
-                logger.info("Removing temporary directory")
                 shutil.rmtree(tmpdir_path)
 
             return result
@@ -141,7 +131,6 @@ def run_in_tmp_environment(**kwargs) -> Callable:
         def wrapped_function(*args, **_kwargs):
 
             for env_var in env_vars:
-                logger.info(f"Setting the {env_var.name} to {env_var.new_val}")
                 os.environ[env_var.name] = env_var.new_val
 
             result = func(*args, **_kwargs)
@@ -172,7 +161,8 @@ def run_external(
         with process.stderr:
             for line in iter(process.stderr.readline, b""):
                 if stderr_to_log:
-                    logger.warning("STDERR: %r", line.decode())
+                    # logger.warning("STDERR: %r", line.decode())
+                    pass
 
         process.wait()
 

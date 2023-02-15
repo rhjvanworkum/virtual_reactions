@@ -12,8 +12,8 @@ from sklearn.utils.estimator_checks import check_estimator
 from skopt import BayesSearchCV
 from skopt.space import Real
 
-from reactions.e2_sn2.e2_sn2_reaction import E2Sn2Reaction
-from reactions.e2_sn2.template import E2ReactionTemplate, Sn2ReactionTemplate
+from src.reactions.e2_sn2.e2_sn2_reaction import E2Sn2Reaction
+from src.reactions.e2_sn2.template import E2ReactionTemplate, Sn2ReactionTemplate
 
 BASE_DIR = '/home/rhjvanworkum/virtual_reactions/calculations/'
 XTB_PATH = "/home/rhjvanworkum/xtb-6.5.1/bin/xtb"
