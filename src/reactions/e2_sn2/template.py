@@ -7,7 +7,7 @@ import numpy as np
 import scipy
 from scipy import spatial
 
-from utils import Atom
+from src.utils import Atom
 
 
 class E2Sn2ReactionIndices:

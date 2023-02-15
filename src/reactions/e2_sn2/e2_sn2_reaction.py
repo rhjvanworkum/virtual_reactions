@@ -1,9 +1,9 @@
 from typing import Any, List, Tuple, Union
-from XTB import xtb
+from src.methods.XTB import xtb
 
-from compound import Compound, Conformation
+from src.compound import Compound, Conformation
 from reactions.e2_sn2.template import E2Sn2ReactionIndices, ReactionTemplate
-from utils import Atom
+from src.utils import Atom
 
 FORCE_CONSTANT = 2
 

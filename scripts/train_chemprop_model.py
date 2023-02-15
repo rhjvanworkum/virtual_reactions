@@ -22,5 +22,7 @@ if __name__ == "__main__":
 
     # dataset.generate_chemprop_dataset(temp_dataset_path)
 
+    # --separate_val_path {val_path} --separate_test_path {test_path} --pytorch_seed {random seed}
+
     os.system(f"chemprop_train --reaction --reaction_mode reac_prod --smiles_columns smiles --target_columns label --data_path {temp_dataset_path} --dataset_type classification --save_dir test")
 

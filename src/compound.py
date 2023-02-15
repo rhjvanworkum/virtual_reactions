@@ -1,7 +1,7 @@
 import os
 from typing import List
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-from XTB import run_xtb
+from src.methods.XTB import run_xtb
 import numpy as np
 from operator import itemgetter
 
@@ -10,7 +10,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-from utils import Atom, write_xyz_file
+from src.utils import Atom, write_xyz_file
 
 def convert_rdkit_conformer(
     mol,

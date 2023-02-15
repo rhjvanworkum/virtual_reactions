@@ -4,6 +4,7 @@ results/
 *.png
 *.out
 tests/
+experiments/
 
 
 # Byte-compiled / optimized / DLL files

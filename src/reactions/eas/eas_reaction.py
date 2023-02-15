@@ -2,10 +2,10 @@ from typing import List, Union
 import rdkit
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from XTB import xtb
+from src.methods.XTB import xtb
 
 
-from compound import Compound, Conformation
+from src.compound import Compound, Conformation
 
 
 class EASReaction:
