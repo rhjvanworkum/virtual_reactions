@@ -1,8 +1,8 @@
 from concurrent.futures import ProcessPoolExecutor
 import pandas as pd
 import ast
-from src.reactions.e2_sn2.template import E2ReactionTemplate, Sn2ReactionTemplate
-from src.reactions.e2_sn2.e2_sn2_reaction import E2Sn2Reaction
+from src.reactions.e2_sn2.old.template import E2ReactionTemplate, Sn2ReactionTemplate
+from src.reactions.e2_sn2.old.e2_sn2_reaction import E2Sn2Reaction
 import numpy as np
 import sklearn
 from sklearn.metrics import accuracy_score, roc_auc_score

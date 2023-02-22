@@ -8,8 +8,8 @@ from tempfile import mkdtemp
 
 
 class Atom:
-    def __init__(self, type, x, y, z) -> None:
-        self.type = type
+    def __init__(self, atomic_symbol, x, y, z) -> None:
+        self.atomic_symbol = atomic_symbol
         self.x = x
         self.y = y
         self.z = z
@@ -46,13 +46,13 @@ def write_xyz_file(atoms: List[Atom], filename: str):
     f.write('\n')
 
     for atom in atoms:
-        f.write(atom.type)
-        for coord in ['x', 'y', 'z']:
-            if getattr(atom, coord) < 0:
+        f.write(atom.atomic_symbol)
+        for cartesian in ['x', 'y', 'z']:
+            if getattr(atom.coord, cartesian) < 0:
                 f.write('         ')
             else:
                 f.write('          ')
-            f.write("%.5f" % getattr(atom, coord))
+            f.write("%.5f" % getattr(atom.coord, cartesian))
         f.write('\n')
     
     f.write('\n')

@@ -1,21 +1,12 @@
-from typing import Any, List, Tuple, Union
-from src.methods.XTB import xtb
+import autode as ade
+from autode.conformers.conformer import Conformer
+from autode.species.complex import Complex
+from autode.transition_states.locate_tss import translate_rotate_reactant
 
-from src.compound import Compound, Conformation
-from src.reactions.e2_sn2.template import E2Sn2ReactionIndices, ReactionTemplate
-from src.utils import Atom
+from typing import List
 
-FORCE_CONSTANT = 2
-
-def construct_xcontrol_file(
-    distance_constraints: List[Tuple[Tuple[int], float]]
-) -> str:
-    string = ""
-    for (i, j), dist in distance_constraints:
-        string += f"$constrain\n"
-        string += f"force constant={FORCE_CONSTANT}\n"
-        string += f"distance:{i+1}, {j+1}, {dist:.4f}\n$"
-    return string
+from src.reactions.e2_sn2.template import E2Sn2ReactionIndices
+from src.utils import write_xyz_file
 
 
 class E2Sn2Reaction:
@@ -25,119 +16,77 @@ class E2Sn2Reaction:
         substrate_smiles: str,
         nucleophile_smiles: str,
         indices: List[List[int]],
-        reaction_complex_templates: List[ReactionTemplate],
-        transition_state_templates: List[ReactionTemplate]
+        sn2_reaction_complex_template, # : List[ReactionTemplate],
+        e2_reaction_complex_template, # : List[ReactionTemplate],
+        n_conformers: int = 100,
+        max_iter: int = 100
     ) -> None:
-        self.substrate = Compound.from_smiles(substrate_smiles)
-        self.substrate.generate_conformers()
-        self.substrate.optimize_conformers()
+        self.nucleophile = ade.Molecule(smiles=nucleophile_smiles)
+        self.substrate = ade.Molecule(smiles=substrate_smiles)
+        self.substrate._generate_conformers(n_conformers)
 
-        self.nucleophile_smiles = nucleophile_smiles
-        self.nucleophile = Conformation(
-            geometry=[Atom(''.join([c for c in nucleophile_smiles if c.isupper()]), 0.0, 0.0, 0.0)],
-            charge=-1,
-            mult=0
-        )
- 
-        self.e2sn2_indices = E2Sn2ReactionIndices(*indices[len(indices[0]) != 4])
+        indices = indices[len(indices[0]) != 4]
+        indices[-1] = -1
+        self.e2sn2_indices = E2Sn2ReactionIndices(*indices)
 
-        self.rc_templates = reaction_complex_templates
-        self.ts_templates = transition_state_templates
+        self.sn2_reaction_complex_template = sn2_reaction_complex_template
+        self.e2_reaction_complex_template = e2_reaction_complex_template
 
-    def compute_energy(
+        self.max_iter = max_iter
+        self.threshold = -30
+
+    def _compute_sn2_barrier(
         self,
-        molecule: Union[Compound, Conformation],
-        conformer_idx: int
-    ) -> float:
-        if molecule.conformers[conformer_idx] is not None:
-            energy, _ = xtb(
-                molecule=molecule,
-                conformer_idx=conformer_idx,
-                keywords=[],
-                method='2',
-                solvent='Methanol',
-                xcontrol_file=None
-            )
-        else:
-            energy = None
-
-        return energy
-
-    def optimize_transition_state(
-        self,
-        molecule: Union[Compound, Conformation],
-        conformer_idx: int,
-        distance_constraints: List[Tuple[Tuple[int], float]]
+        method,
+        ts_optimizer,
     ):
-        if molecule.conformers[conformer_idx] is not None:
-            energy, _ = xtb(
-                molecule=molecule,
-                conformer_idx=conformer_idx,
-                keywords=['--opt'],
-                method='2',
-                solvent='Methanol',
-                xcontrol_file=construct_xcontrol_file(distance_constraints)
+        """ Construct Reaction Complexes """
+        reaction_complexes = []
+        for idx, conformer in enumerate(self.substrate.conformers):
+            success, rc, bond_rearran = self.sn2_reaction_complex_template.generate_reaction_complex(
+                conformer,
+                self.nucleophile,
+                self.e2sn2_indices,
+                method
             )
-        else:
-            energy = None
+            if success:
+                reaction_complexes.append((rc, bond_rearran))
 
-        return energy
+        if len(reaction_complexes) == 0:
+            print("No sucesfull reaction complexes made")
+            return None
 
-    def compute_reaction_barriers(
-        self,
-    ):
-        reaction_barriers = []
+        """ Construct TS initial guess """   
+        ts_guesses = []
+        for rc, bond_rearran in reaction_complexes:
+            mol_1 = Conformer(atoms=rc.atoms[:-1])
+            mol_2 = Conformer(atoms=rc.atoms[-1:], charge=-1)
+            ts_guess = Complex(mol_1, mol_2)
+            translate_rotate_reactant(
+                ts_guess,
+                bond_rearrangement=bond_rearran,
+                shift_factor=1.5 if ts_guess.charge == 0 else 2.5,
+            )
+            ts_guesses.append((rc, ts_guess))
 
-        # iterate over all conformers of the substrate
-        for conf_idx in range(len(self.substrate.conformers)):
-            reaction_barriers.append([])
-
-            for rc_template, ts_template in zip(self.rc_templates, self.ts_templates):
-
-                # construct Reaction complex
-                rc, distance_constraints = rc_template.generate_ts(
-                    self.substrate.conformers[conf_idx], 
-                    self.nucleophile_smiles,
-                    self.e2sn2_indices
+        """ TS optimization """
+        barriers = []
+        for (rc, ts_guess) in ts_guesses:
+            try:
+                ts_optimizer.optimise(
+                    species=ts_guess,
+                    method=method,
+                    maxiter=self.max_iter
                 )
-                rc = Conformation(geometry=rc, charge=-1, mult=0)
-                rc_energy = self.optimize_transition_state(
-                    molecule=rc, 
-                    conformer_idx=0,
-                    distance_constraints=distance_constraints
-                )
+            except Exception as e:
+                print(e)
+                continue
 
-                # generate a transition state guess
-                ts, distance_constraints = ts_template.generate_ts(
-                    self.substrate.conformers[conf_idx], 
-                    self.nucleophile_smiles,
-                    self.e2sn2_indices
-                )
-                ts = Conformation(geometry=ts, charge=-1, mult=0)
-                ts_energy = self.optimize_transition_state(
-                    molecule=ts, 
-                    conformer_idx=0,
-                    distance_constraints=distance_constraints
-                )
-
-                if ts_energy is not None and rc_energy is not None:
-                    barrier = (ts_energy - rc_energy)
-                else:
-                    barrier = 1e6
-                    
-                reaction_barriers[-1].append(barrier)
-
-        return reaction_barriers
-
-if __name__ == "__main__":
-    substrate_smiles = "[N:1]#[C:2][C@@H:3]([NH2:4])[CH2:5][Br:6]"
-    nucleophile_smiles = "[F-:7]"
-    indices = [[5, 4, 6], [5, 4, 2, 6]]
-
-    reaction = E2Sn2Reaction(
-        substrate_smiles=substrate_smiles,
-        nucleophile_smiles=nucleophile_smiles,
-        indices=indices
-    )
-
-    print(reaction.compute_reaction_barriers())
+            ts_guess.calc_hessian(method=method)
+            if ts_guess.imaginary_frequencies is not None:
+                for im_freq in ts_guess.imaginary_frequencies:
+                    if im_freq < self.threshold:
+                        barriers.append(ts_guess.energy - rc.energy)
+                        break
+        
+        return barriers
