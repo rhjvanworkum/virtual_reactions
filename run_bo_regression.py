@@ -12,8 +12,8 @@ from sklearn.utils.estimator_checks import check_estimator
 from skopt import BayesSearchCV
 from skopt.space import Real
 
-from src.reactions.e2_sn2.e2_sn2_reaction import E2Sn2Reaction
-from src.reactions.e2_sn2.template import E2ReactionTemplate, Sn2ReactionTemplate
+from src.reactions.e2_sn2.old.e2_sn2_reaction import E2Sn2Reaction
+from src.reactions.e2_sn2.old.template import E2ReactionTemplate, Sn2ReactionTemplate
 from run_regression import HARTREE_TO_KCAL
 
 BASE_DIR = '/home/rhjvanworkum/virtual_reactions/calculations/'

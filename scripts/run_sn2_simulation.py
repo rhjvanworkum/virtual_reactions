@@ -10,6 +10,7 @@ import autode as ade
 from autode.species.complex import Complex
 from autode.opt.optimisers import PRFOptimiser
 from autode.wrappers.XTB import XTB
+from autode.values import Distance
 
 from src.reactions.e2_sn2.e2_sn2_reaction import E2Sn2Reaction
 from src.reactions.e2_sn2.template import E2Sn2ReactionIndices, Sn2ReactionComplexTemplate
@@ -17,8 +18,9 @@ from src.reactions.e2_sn2.template import E2Sn2ReactionIndices, Sn2ReactionCompl
 
 BASE_DIR = '/home/rhjvanworkum/virtual_reactions/calculations/'
 ade.Config.XTB.path = '/home/ruard/Programs/xtb-6.5.1/bin/xtb'
-N_CPUS = 90
-N_CPUS_CONFORMERS = 4
+ade.Config.max_atom_displacement = Distance(5.0, units="Å")
+N_CPUS = 30
+# N_CPUS_CONFORMERS = 4
 
 def check_C_nuc_distance(
     reaction_complex: Complex,
@@ -66,7 +68,8 @@ def get_reaction_barriers(args):
         nucleophile_smiles=nucleophile_smiles,
         indices=indices,
         sn2_reaction_complex_template=sn2_reaction_complex_template,
-        e2_reaction_complex_template=None
+        e2_reaction_complex_template=None,
+        n_conformers=300
     )
 
     method = XTB()

@@ -2,6 +2,7 @@ import autode as ade
 from autode.species.complex import Complex
 from autode.opt.optimisers import PRFOptimiser
 from autode.wrappers.XTB import XTB
+from autode.values import Frequency, Distance, Allocation
 
 from typing import Dict
 import os
@@ -42,10 +43,14 @@ def check_nuc_H_distances(
 if __name__ == "__main__":
     BASE_DIR = '/home/ruard/code/virtual_reactions/calculations/'
     ade.Config.XTB.path = '/home/ruard/Programs/xtb-6.5.1/bin/xtb'
+    ade.Config.max_atom_displacement = Distance(5.0, units="Å")
 
-    substrate = "[CH3:1][C@@H:2]([NH2:3])[CH2:4][Cl:5]"
-    nucleophile = "[F-:6]"
-    indices = [[4, 3, 5], [4, 3, 1, 5]]
+    # substrate = "[CH3:1][C@@H:2]([NH2:3])[CH2:4][Cl:5]"
+    # nucleophile = "[F-:6]"
+    # indices = [[4, 3, 5], [4, 3, 1, 5]]
+    substrate = "[N:1]#[C:2][CH2:3][C@:4]([NH2:5])([Cl:6])[N+:7](=[O:8])[O-:9]"
+    nucleophile = "[H-:10]"
+    indices = [[5, 3, 9], [5, 3, 2, 9]]
 
     # create temp dir here & checkout
     dir = os.path.join(BASE_DIR, f'{1}_calc/')
@@ -63,7 +68,8 @@ if __name__ == "__main__":
         nucleophile_smiles=nucleophile,
         indices=indices,
         sn2_reaction_complex_template=sn2_reaction_complex_template,
-        e2_reaction_complex_template=None
+        e2_reaction_complex_template=None,
+        n_conformers=300
     )
 
     method = XTB()

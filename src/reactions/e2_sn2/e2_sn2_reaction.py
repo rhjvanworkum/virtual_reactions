@@ -1,12 +1,11 @@
 import autode as ade
 from autode.conformers.conformer import Conformer
 from autode.species.complex import Complex
-from autode.transition_states.locate_tss import translate_rotate_reactant
 
 from typing import List
 
 from src.reactions.e2_sn2.template import E2Sn2ReactionIndices
-from src.utils import write_xyz_file
+from src.utils import write_xyz_file, translate_rotate_reactant
 
 
 class E2Sn2Reaction:
@@ -39,6 +38,7 @@ class E2Sn2Reaction:
         self,
         method,
         ts_optimizer,
+        random_seed: int = 42
     ):
         """ Construct Reaction Complexes """
         reaction_complexes = []
@@ -66,6 +66,7 @@ class E2Sn2Reaction:
                 ts_guess,
                 bond_rearrangement=bond_rearran,
                 shift_factor=1.5 if ts_guess.charge == 0 else 2.5,
+                random_seed=random_seed
             )
             ts_guesses.append((rc, ts_guess))
 
