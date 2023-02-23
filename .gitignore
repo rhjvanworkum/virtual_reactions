@@ -3,7 +3,6 @@ calculations/
 results/
 *.png
 *.out
-tests/
 experiments/
 
 

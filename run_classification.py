@@ -34,7 +34,7 @@ def construct_templates(
         E2ReactionTemplate(
             d_nucleophile=e2_d_nuc,
             d_leaving_group=e2_d_leav,
-            d_H=1
+            d_H=1.22
         )
     ]
 
@@ -49,7 +49,7 @@ def construct_templates(
         E2ReactionTemplate(
             d_nucleophile=e2_d_nuc,
             d_leaving_group=e2_d_leav,
-            d_H=1
+            d_H=1.22
         )
     ]
 
@@ -74,7 +74,7 @@ def run_experiment(
     rc_templates,
     ts_templates,
 ):
-    class_data = pd.read_csv('./data/e2_sn2_classification_dataset.csv')
+    class_data = pd.read_csv('./data/e2_sn2_classification_dataset.csv')[:90]
 
     arguments = []
     labels = []
@@ -97,48 +97,62 @@ def run_experiment(
 
     sn2_energies, e2_energies = [], []
     for energies in results:
-        sn2_energies.append(np.min(energies[:, 0]))
-        e2_energies.append(np.min(energies[:, 1]))
+        sn2_energies.append(energies[:, 0].tolist())
+        e2_energies.append(energies[:, 1].tolist())
+
+    data = {
+        "sn2_energies": sn2_energies,
+        "e2_energies": e2_energies
+    }
+    df = pd.DataFrame(data)
+    df.to_csv('test.csv')
+
+    # print(np.array(sn2_energies).shape)
+    # print(np.array(e2_energies).shape)
+
+    # np.save('sn2_energies.npy', np.array(sn2_energies))
+    # np.save('e2_energies.npy', np.array(e2_energies))
+    
 
 
-    preds = []
-    for idx in range(len(labels)):
-        if e2_energies[idx] < sn2_energies[idx]:
-            pred = 0 # e2
-        else:
-            pred = 1 # sn2
-        preds.append(pred)
+    # preds, new_labels = []
+    # for idx in range(len(labels)):
+    #     if e2_energies[idx] < sn2_energies[idx]:
+    #         pred = 0 # e2
+    #     else:
+    #         pred = 1 # sn2
+    #     preds.append(pred)
 
-    print(preds)
+    # print(preds)
 
-    print(f'Name: {name}')
-    print('Accuracy: ', accuracy_score(labels, preds))
-    print('Roc AUC: ', roc_auc_score(labels, preds))
-    print('\n\n')
+    # print(f'Name: {name}')
+    # print('Accuracy: ', accuracy_score(labels, preds))
+    # print('Roc AUC: ', roc_auc_score(labels, preds))
+    # print('\n\n')
 
-    labels = np.array(labels)
-    preds = np.array(preds)
-    image = np.ones(900) * 2
-    values = (labels == preds).astype(int)
-    for idx in range(len(values)):
-        image[idx] = values[idx]
-    image = image.reshape((30, 30))
+    # labels = np.array(labels)
+    # preds = np.array(preds)
+    # image = np.ones(900) * 2
+    # values = (labels == preds).astype(int)
+    # for idx in range(len(values)):
+    #     image[idx] = values[idx]
+    # image = image.reshape((30, 30))
 
-    plt.imshow(image)
-    plt.savefig(f'{name}.png')
-    plt.clf()
+    # plt.imshow(image)
+    # plt.savefig(f'{name}.png')
+    # plt.clf()
 
 if __name__ == "__main__":
     # this had a pcc of 0.58
     rc_sn2_d_nucs = [1.5]
-    rc_sn2_d_leavs = [1.2]
+    rc_sn2_d_leavs = [1.8] # [1.2]
     ts_sn2_d_nucs = [1.5]
     ts_sn2_d_leavs = [1.8]
 
-    # this had a pcc of 0.22
-    rc_e2_d_nucs = [1]
-    rc_e2_d_leavs = [1]
-    ts_e2_d_nucs = [1]
+    # this had a pcc of 0.80 correlation
+    rc_e2_d_nucs = [1.5]
+    rc_e2_d_leavs = [1.8] # [1.2]
+    ts_e2_d_nucs = [1.5]
     ts_e2_d_leavs = [1.97]
 
     idx = 0

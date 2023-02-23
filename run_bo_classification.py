@@ -17,7 +17,7 @@ from src.reactions.e2_sn2.template import E2ReactionTemplate, Sn2ReactionTemplat
 
 BASE_DIR = '/home/rhjvanworkum/virtual_reactions/calculations/'
 XTB_PATH = "/home/rhjvanworkum/xtb-6.5.1/bin/xtb"
-N_CPUS = 100
+N_CPUS = 120
 N_CPUS_CONFORMERS = 4
 
 os.environ["BASE_DIR"] = BASE_DIR
@@ -123,12 +123,24 @@ class XtbSimulationEstimator(BaseEstimator):
 
         sn2_energies, e2_energies = [], []
         for energies in results:
-            sn2_energies.append(np.min(energies[:, 0]))
-            e2_energies.append(np.min(energies[:, 1]))
+            if (energies[:, 0] > 1e5).all():
+                sn2_energies.append(None)
+            else:
+                sn2_energies.append(np.mean(np.array([
+                    e for e in energies[:, 0] if e < 1e5
+                ])))
+            if (energies[:, 1] > 1e5).all():
+                e2_energies.append(None)
+            else:
+                e2_energies.append(np.mean(np.array([
+                    e for e in energies[:, 1] if e < 1e5
+                ])))
 
         preds = []
         for idx in range(len(sn2_energies)):
-            if e2_energies[idx] < sn2_energies[idx]:
+            if (e2_energies[idx] is None) or (sn2_energies[idx] is None):
+                pred = None
+            elif e2_energies[idx] < sn2_energies[idx]:
                 pred = 0 # e2
             else:
                 pred = 1 # sn2
@@ -143,8 +155,15 @@ if __name__ == "__main__":
     Y = [int(len(ast.literal_eval(row['products_run'])[0]) == 3) for _, row in class_data.iterrows()]
 
     def scoring_fn(estimator, Xtest, Ytest):
-        preds = estimator.predict(X)
-        return roc_auc_score(Y, preds)
+        predictions = estimator.predict(X)
+
+        labels, preds = [], []
+        for idx in range(len(predictions)):
+            if predictions[idx] is not None:
+                labels.append(Y[idx])
+                preds.append(predictions[idx])
+        print(len(labels), len(preds))
+        return roc_auc_score(labels, preds)
 
     opt = BayesSearchCV(
         XtbSimulationEstimator(),

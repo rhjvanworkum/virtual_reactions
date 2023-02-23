@@ -1,4 +1,4 @@
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 from src.methods.XTB import xtb
 
 from src.compound import Compound, Conformation
@@ -28,13 +28,14 @@ class E2Sn2Reaction:
         reaction_complex_templates: List[ReactionTemplate],
         transition_state_templates: List[ReactionTemplate]
     ) -> None:
+        self.substrate_smiles = substrate_smiles
         self.substrate = Compound.from_smiles(substrate_smiles)
         self.substrate.generate_conformers()
         self.substrate.optimize_conformers()
 
         self.nucleophile_smiles = nucleophile_smiles
         self.nucleophile = Conformation(
-            geometry=[Atom(''.join([c for c in nucleophile_smiles if c.isupper()]), 0.0, 0.0, 0.0)],
+            geometry=[Atom(self.nucleophile_smiles.split('-')[0][1:], 0.0, 0.0, 0.0)],
             charge=-1,
             mult=0
         )
@@ -67,16 +68,19 @@ class E2Sn2Reaction:
         self,
         molecule: Union[Compound, Conformation],
         conformer_idx: int,
-        distance_constraints: List[Tuple[Tuple[int], float]]
+        distance_constraints: List[Tuple[Tuple[int], float]],
+        comment: Optional[str] = None
     ):
+        # print('conformer: ', molecule.conformers[conformer_idx])
         if molecule.conformers[conformer_idx] is not None:
             energy, _ = xtb(
-                molecule=molecule,
+                molecule=molecule, 
                 conformer_idx=conformer_idx,
                 keywords=['--opt'],
                 method='2',
                 solvent='Methanol',
-                xcontrol_file=construct_xcontrol_file(distance_constraints)
+                xcontrol_file=construct_xcontrol_file(distance_constraints),
+                comment=comment
             )
         else:
             energy = None
@@ -104,8 +108,10 @@ class E2Sn2Reaction:
                 rc_energy = self.optimize_transition_state(
                     molecule=rc, 
                     conformer_idx=0,
-                    distance_constraints=distance_constraints
+                    distance_constraints=distance_constraints,
+                    comment=f'{self.substrate_smiles}-{self.nucleophile_smiles}-{type(rc_template)}'
                 )
+                # print('rc: ', rc_energy)
 
                 # generate a transition state guess
                 ts, distance_constraints = ts_template.generate_ts(
@@ -117,8 +123,10 @@ class E2Sn2Reaction:
                 ts_energy = self.optimize_transition_state(
                     molecule=ts, 
                     conformer_idx=0,
-                    distance_constraints=distance_constraints
+                    distance_constraints=distance_constraints,
+                    comment=f'{self.substrate_smiles}-{self.nucleophile_smiles}-{type(ts_template)}'
                 )
+                # print('ts: ', ts_energy)
 
                 if ts_energy is not None and rc_energy is not None:
                     barrier = (ts_energy - rc_energy)

@@ -35,7 +35,7 @@ class ReactionTemplate:
         nucleophile: str,
     ) -> List[Atom]:
         nucleophile = Atom(
-            type=''.join([c for c in nucleophile if c.isupper()]),
+            type=nucleophile.split('-')[0][1:],
             x=0.0,
             y=0.0,
             z=0.0
@@ -106,7 +106,7 @@ def get_hs(ts_geometry, indices):
     total_hs = []
 
     for idx, atom in enumerate(ts_geometry):
-        if atom.type == 'H':
+        if atom.type == 'H' and (idx != indices.leaving_group_idx and idx != indices.nucleophile_idx):
             total_hs.append((idx, atom))
 
     hs = []
