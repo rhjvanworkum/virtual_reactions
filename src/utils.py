@@ -8,8 +8,8 @@ from tempfile import mkdtemp
 
 
 class Atom:
-    def __init__(self, type, x, y, z) -> None:
-        self.type = type
+    def __init__(self, atomic_symbol, x, y, z) -> None:
+        self.atomic_symbol = atomic_symbol
         self.x = x
         self.y = y
         self.z = z
@@ -46,13 +46,13 @@ def write_xyz_file(atoms: List[Atom], filename: str):
     f.write('\n')
 
     for atom in atoms:
-        f.write(atom.type)
-        for coord in ['x', 'y', 'z']:
-            if getattr(atom, coord) < 0:
+        f.write(atom.atomic_symbol)
+        for cartesian in ['x', 'y', 'z']:
+            if getattr(atom.coord, cartesian) < 0:
                 f.write('         ')
             else:
                 f.write('          ')
-            f.write("%.5f" % getattr(atom, coord))
+            f.write("%.5f" % getattr(atom.coord, cartesian))
         f.write('\n')
     
     f.write('\n')
@@ -165,5 +165,98 @@ def run_external(
                     pass
 
         process.wait()
+
+    return None
+
+
+from autode.log import logger
+from autode.species import Complex
+from autode.substitution import get_cost_rotate_translate
+from autode.substitution import get_substc_and_add_dummy_atoms
+from scipy.optimize import minimize
+
+
+def translate_rotate_reactant(
+    reactant, bond_rearrangement, shift_factor, random_seed, n_iters=10
+):
+    """
+    Shift a molecule in the reactant complex so that the attacking atoms
+    (a_atoms) are pointing towards the attacked atoms (l_atoms). Applied in
+    place
+
+    ---------------------------------------------------------------------------
+    Arguments:
+        reactant (autode.complex.Complex):
+
+        bond_rearrangement (autode.bond_rearrangement.BondRearrangement):
+
+        shift_factor (float):
+
+        n_iters (int): Number of iterations of translation/rotation to perform
+                       to (hopefully) find the global minima
+    """
+    np.random.seed(random_seed)
+
+    if not isinstance(reactant, Complex):
+        logger.warning("Cannot rotate/translate component, not a Complex")
+        return
+
+    if reactant.n_molecules < 2:
+        logger.info(
+            "Reactant molecule does not need to be translated or " "rotated"
+        )
+        return
+
+    logger.info("Rotating/translating into a reactive conformation... running")
+
+    # This function can add dummy atoms for e.g. SN2' reactions where there
+    # is not a A -- C -- Xattern for the substitution centre
+    subst_centres = get_substc_and_add_dummy_atoms(
+        reactant, bond_rearrangement, shift_factor=shift_factor
+    )
+
+    if all(
+        sc.a_atom in reactant.atom_indexes(mol_index=0) for sc in subst_centres
+    ):
+        attacking_mol = 0
+    else:
+        attacking_mol = 1
+
+    # Disable the logger to prevent rotation/translations printing
+    logger.disabled = True
+
+    # Find the global minimum for inplace rotation, translation and rotation
+    min_cost, opt_x = None, None
+
+    for _ in range(n_iters):
+        res = minimize(
+            get_cost_rotate_translate,
+            x0=np.random.random(11),
+            method="BFGS",
+            tol=0.1,
+            args=(reactant, subst_centres, attacking_mol),
+        )
+
+        if min_cost is None or res.fun < min_cost:
+            min_cost = res.fun
+            opt_x = res.x
+
+    # Re-enable the logger
+    logger.disabled = False
+    logger.info(f"Minimum cost for translating/rotating is {min_cost:.3f}")
+
+    # Translate/rotation the attacking molecule optimally
+    reactant.rotate_mol(
+        axis=opt_x[:3], theta=opt_x[3], mol_index=attacking_mol
+    )
+    reactant.translate_mol(vec=opt_x[4:7], mol_index=attacking_mol)
+    reactant.rotate_mol(
+        axis=opt_x[7:10], theta=opt_x[10], mol_index=attacking_mol
+    )
+
+    logger.info("                                                 ... done")
+
+    reactant.atoms.remove_dummy()
+    reactant.print_xyz_file()
 
     return None

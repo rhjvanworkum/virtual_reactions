@@ -1,13 +1,13 @@
+from typing import Callable, List
+import autode as ade
+from autode.values import Coordinates
+from autode.bond_rearrangement import BondRearrangement
 
-
-
-from typing import List, Tuple, Union
-import numpy as np
-
-import scipy
 from scipy import spatial
+import numpy as np
+from copy import copy
 
-from src.utils import Atom
+from src.utils import write_xyz_file
 
 
 class E2Sn2ReactionIndices:
@@ -24,178 +24,96 @@ class E2Sn2ReactionIndices:
         self.nucleophile_idx = nucleophile_idx
 
 
-class ReactionTemplate:
+class Sn2ReactionComplexTemplate:
+    dist_dict = {
+        'H': 1.14,
+        'F': 1.41,
+        'Cl': 1.86,
+        'Br': 2.04
+    }
+    hydrogen_dist_dict = {
+        'H': 0.78,
+        'F': 0.96,
+        'Cl': 1.33,
+        'Br': 2.48
+    }
 
-    def __init__(self) -> None:
-        pass
-
-    def _generate_ts_geometry(
+    def __init__(
         self,
-        substrate_geometry: List[Atom],
-        nucleophile: str,
-    ) -> List[Atom]:
-        nucleophile = Atom(
-            type=nucleophile.split('-')[0][1:],
-            x=0.0,
-            y=0.0,
-            z=0.0
-        )
+        checks: List[Callable] = []
+    ) -> None:
+        super(Sn2ReactionComplexTemplate, self).__init__()
+        self.checks = checks
 
-        for idx, atom in enumerate(substrate_geometry):
-            if atom.type == 'H':
-                insert_idx = idx
-                break
-
-        ts_geometry = substrate_geometry
-        ts_geometry.insert(insert_idx, nucleophile)
-
-        return ts_geometry
-
-    def generate_ts(
+    def _construct_bond_rearrangement(
         self,
-        substrate_geometry: List[Atom],
-        nucleophile: str,
         indices: E2Sn2ReactionIndices
-    ) -> Tuple[List[Atom], List[Tuple[Tuple[int], float]]]:
-        raise NotImplementedError
+    ):
+        bond_rearr = BondRearrangement(
+            forming_bonds=[(indices.central_atom_idx, indices.nucleophile_idx)],
+            breaking_bonds=[(indices.central_atom_idx, indices.leaving_group_idx)]
+        )
+        return bond_rearr
 
 
-
-class Sn2ReactionTemplate(ReactionTemplate):
-
-    def __init__(
+    def generate_reaction_complex(
         self,
-        d_nucleophile: float,
-        d_leaving_group: float,
-        angle: float
-    ) -> None:
-        super(Sn2ReactionTemplate, self).__init__()
-        self.d_nucleophile = d_nucleophile
-        self.d_leaving_group = d_leaving_group
-        self.angle = angle
-
-    def generate_ts(
-        self,
-        substrate_geometry: List[Atom],
-        nucleophile: str,
+        substrate: ade.Species,
+        nucleophile: ade.Species,
         indices: E2Sn2ReactionIndices,
-    ) -> List[Atom]:
-        ts_geometry = self._generate_ts_geometry(substrate_geometry, nucleophile)
-
-        # set distance and angle
-        # 1. scale distance vector of leaving group
-        diff_vec = ts_geometry[indices.leaving_group_idx].coordinates - ts_geometry[indices.central_atom_idx].coordinates
+        method: ade.methods
+    ) -> ade.Species:   
+        """
+        Tries to generate a reaction complex
+        """
+        # generate coordinates along substitution center
+        diff_vec = substrate.atoms[indices.leaving_group_idx].coord - substrate.atoms[indices.central_atom_idx].coord
         diff_vec /= np.linalg.norm(diff_vec)
-        ts_geometry[indices.leaving_group_idx].coordinates = ts_geometry[indices.central_atom_idx].coordinates + self.d_leaving_group * diff_vec
-
-        # 2. set nucleophile vector to rotated (and scaled) version of leaving group
-        rot_vec = ts_geometry[indices.central_atom_idx].coordinates - ts_geometry[indices.attacked_atom_idx].coordinates
-        rot_vec = rot_vec / np.linalg.norm(rot_vec) * np.radians(self.angle)
+        rot_vec = substrate.atoms[indices.central_atom_idx].coord - substrate.atoms[indices.attacked_atom_idx].coord
+        rot_vec = rot_vec / np.linalg.norm(rot_vec) * np.radians(180)
         r = spatial.transform.Rotation.from_rotvec(rot_vec)
-        ts_geometry[indices.nucleophile_idx].coordinates = ts_geometry[indices.central_atom_idx].coordinates + r.apply(self.d_nucleophile * diff_vec)
+        distance = self.dist_dict[nucleophile.atoms[0].atomic_symbol] + 1.0
+        nucleophile_coords = substrate.atoms[indices.central_atom_idx].coord + r.apply(distance * diff_vec)
+        
+        # generate constraints + bond_rearrangements
+        constraints = {
+            (indices.central_atom_idx, len(substrate.atoms)): distance
+        }
+        tmp_indices = copy(indices)
+        tmp_indices.nucleophile_idx = len(substrate.atoms)
+        bond_rearrangement = self._construct_bond_rearrangement(tmp_indices)
 
-        constraints = [
-            ((indices.central_atom_idx, indices.leaving_group_idx), self.d_leaving_group),
-            ((indices.central_atom_idx, indices.nucleophile_idx), self.d_nucleophile)
-        ]
+        # generate reaction complex
+        reaction_complex = substrate.copy()
+        new_atoms = substrate.atoms + [ade.Atom(
+                atomic_symbol=nucleophile.atoms[0].atomic_symbol,
+                x=nucleophile_coords[0],
+                y=nucleophile_coords[1],
+                z=nucleophile_coords[2]
+            )]
+        reaction_complex._parent_atoms = [atom for atom in new_atoms]
+        reaction_complex._coordinates = Coordinates(np.array([atom.coord for atom in new_atoms]))
+        reaction_complex.charge = -1
 
-        return ts_geometry, constraints
+        # constrained optimization of reaction complex
+        reaction_complex.constraints.distance = constraints
+        reaction_complex.optimise(method=method)
 
+        # relaxed optimization of reaction complex
+        reaction_complex.constraints.distance = {}
+        reaction_complex.optimise(method=method)
 
-def get_hs(ts_geometry, indices):
-    total_hs = []
-
-    for idx, atom in enumerate(ts_geometry):
-        if atom.type == 'H' and (idx != indices.leaving_group_idx and idx != indices.nucleophile_idx):
-            total_hs.append((idx, atom))
-
-    hs = []
-    for (idx, atom) in total_hs:
-        if np.linalg.norm(ts_geometry[indices.attacked_atom_idx].coordinates - atom.coordinates) < 1.2:
-            hs.append(idx)
-
-    if len(hs) > 3:
-        print('C has more than 3 hydrogen bonded to them!')
-        hs = []
-        for (idx, atom) in total_hs:
-            if np.linalg.norm(ts_geometry[indices.attacked_atom_idx].coordinates - atom.coordinates) < 1.1:
-                hs.append(idx)
-
-        if len(hs) > 3:
-            hs = []
-            for (idx, atom) in total_hs:
-                if np.linalg.norm(ts_geometry[indices.attacked_atom_idx].coordinates - atom.coordinates) < 1.0:
-                    hs.append(idx)
-
-    return hs
-
-def get_opposite_hydrogen(
-    ts_geometry,
-    indices,
-    hs_indices
-) -> int:
-    leaving_group_vec = ts_geometry[indices.leaving_group_idx].coordinates - ts_geometry[indices.central_atom_idx].coordinates
-    leaving_group_vec /= np.linalg.norm(leaving_group_vec)
-
-    angles = []
-    for h_idx in hs_indices:
-        vec = ts_geometry[h_idx].coordinates - ts_geometry[indices.attacked_atom_idx].coordinates
-        vec /= np.linalg.norm(vec)
-        angle = np.arccos(np.dot(leaving_group_vec, vec))
-        angles.append(angle)
-    
-    return hs_indices[np.argmin(np.array(angles))]
-
-
-
-
-class E2ReactionTemplate(ReactionTemplate):
-
-    """ Assume for now this is always TRANS """
-
-    def __init__(
-        self,
-        d_nucleophile: float,
-        d_H: float,
-        d_leaving_group: float,
-    ) -> None:
-        super(E2ReactionTemplate, self).__init__()
-        self.d_nucleophile = d_nucleophile
-        self.d_H = d_H
-        self.d_leaving_group = d_leaving_group
-
-    def generate_ts(
-        self,
-        substrate_geometry: List[Atom],
-        nucleophile: str,
-        indices: E2Sn2ReactionIndices,
-    ) -> List[Atom]:
-        ts_geometry = self._generate_ts_geometry(substrate_geometry, nucleophile)
-
-        # get close by H's
-        hs_indices = get_hs(ts_geometry, indices)
-        if len(hs_indices) != 0:
-            h_idx = get_opposite_hydrogen(ts_geometry, indices, hs_indices)
-
-            # 1. scale distance vector of leaving group
-            diff_vec = ts_geometry[indices.leaving_group_idx].coordinates - ts_geometry[indices.central_atom_idx].coordinates
-            diff_vec /= np.linalg.norm(diff_vec)
-            ts_geometry[indices.leaving_group_idx].coordinates = ts_geometry[indices.central_atom_idx].coordinates + self.d_leaving_group * diff_vec
-
-            # 2. set hydrogen distance
-            diff_vec = ts_geometry[h_idx].coordinates - ts_geometry[indices.attacked_atom_idx].coordinates
-            diff_vec /= np.linalg.norm(diff_vec)
-            ts_geometry[h_idx].coordinates = ts_geometry[indices.attacked_atom_idx].coordinates + self.d_H * diff_vec
-
-            # 3. set nucleohpile distance
-            ts_geometry[indices.nucleophile_idx].coordinates = ts_geometry[indices.attacked_atom_idx].coordinates + (self.d_H + self.d_nucleophile) * diff_vec
-
-            constraints = [
-                ((indices.central_atom_idx, indices.leaving_group_idx), self.d_leaving_group),
-                ((indices.attacked_atom_idx, h_idx), self.d_H),
-                ((h_idx, indices.nucleophile_idx), self.d_nucleophile)
-            ]
-        else:
-            ts_geometry, constraints = None, None
-
-        return ts_geometry, constraints
+        # check conditions
+        conditions_passed = []
+        for check in self.checks:
+            conditions_passed.append(
+                check(
+                    reaction_complex,
+                    indices,
+                    self.dist_dict,
+                    self.hydrogen_dist_dict,
+                    nucleophile.atoms[0].atomic_symbol
+                )
+            )
+        
+        return (False not in conditions_passed), reaction_complex, bond_rearrangement

@@ -1,7 +1,7 @@
 import pandas as pd
 import ast
 import os
-from src.reactions.e2_sn2.template import E2ReactionTemplate, Sn2ReactionTemplate
+from src.reactions.e2_sn2.old.template import E2ReactionTemplate, Sn2ReactionTemplate
 import numpy as np
 from sklearn.metrics import mean_squared_error
 from tqdm import tqdm

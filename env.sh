@@ -1,3 +1,3 @@
 # include python path
-PYTHONPATH="/home/rhjvanworkum/virtual_reactions/:$PYTHONPATH"
+PYTHONPATH="/home/ruard/code/virtual_reactions/:$PYTHONPATH"
 export PYTHONPATH
