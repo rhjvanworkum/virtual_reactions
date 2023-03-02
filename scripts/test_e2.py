@@ -10,40 +10,29 @@ import shutil
 import numpy as np
 
 from src.reactions.e2_sn2.e2_sn2_reaction import E2Sn2Reaction
-from src.reactions.e2_sn2.template import E2Sn2ReactionIndices, Sn2ReactionComplexTemplate
+from src.reactions.e2_sn2.template import E2ReactionComplexTemplate, E2Sn2ReactionIndices, Sn2ReactionComplexTemplate
+from src.utils import angle_between
 
 
-def check_C_nuc_distance(
+def check_C_H_Y_angle(
     reaction_complex: Complex,
+    h_idx: int,
     indices: E2Sn2ReactionIndices,
     dist_dict: Dict[str, float],
-    hydrogen_dist_dict: Dict[str, float],
     nuc_symbol: str
 ) -> bool:
-    C_nuc_dist = np.linalg.norm(reaction_complex.atoms[indices.nucleophile_idx].coord - reaction_complex.atoms[indices.central_atom_idx].coord)
-    return C_nuc_dist > dist_dict[nuc_symbol]
+    vec_1 = reaction_complex.atoms[indices.attacked_atom_idx].coord - reaction_complex.atoms[h_idx].coord
+    vec_2 = reaction_complex.atoms[indices.nucleophile_idx].coord - reaction_complex.atoms[h_idx].coord
+    angle = angle_between(vec_1, vec_2)
+    print(angle)
+    return angle > 170
 
-def check_nuc_H_distances(
-    reaction_complex: Complex,
-    indices: E2Sn2ReactionIndices,
-    dist_dict: Dict[str, float],
-    hydrogen_dist_dict: Dict[str, float],
-    nuc_symbol: str
-) -> bool:
-    h_distances = []
-    for atom in reaction_complex.atoms[:-1]:
-        if atom.atomic_symbol == 'H':
-            h_distances.append(np.linalg.norm(reaction_complex.atoms[indices.nucleophile_idx].coord - atom.coord))
-    return min(h_distances) > hydrogen_dist_dict[nuc_symbol]
-
-# def check_angle()
-
-# def check_isomorphism()
 
 if __name__ == "__main__":
     BASE_DIR = '/home/ruard/code/virtual_reactions/calculations/'
     ade.Config.XTB.path = '/home/ruard/Programs/xtb-6.5.1/bin/xtb'
-    ade.Config.max_atom_displacement = Distance(5.0, units="Å")
+    ade.Config.max_atom_displacement = Distance(7.0, units="Å")
+    ade.Config.rmsd_threshold = Distance(0.1, units="Å")
 
     substrate = "[CH3:1][C@@H:2]([NH2:3])[CH2:4][Cl:5]"
     nucleophile = "[F-:6]"
@@ -59,28 +48,31 @@ if __name__ == "__main__":
     os.makedirs(dir)
     os.chdir(dir)
 
-    sn2_reaction_complex_template = Sn2ReactionComplexTemplate(
-        checks=[check_C_nuc_distance, check_nuc_H_distances]
+    e2_reaction_complex_template = E2ReactionComplexTemplate(
+        checks=[check_C_H_Y_angle]
     )
 
     reaction = E2Sn2Reaction(
         substrate_smiles=substrate,
         nucleophile_smiles=nucleophile,
         indices=indices,
-        sn2_reaction_complex_template=sn2_reaction_complex_template,
-        e2_reaction_complex_template=None,
-        n_conformers=300
+        sn2_reaction_complex_template=None,
+        e2_reaction_complex_template=e2_reaction_complex_template,
+        n_conformers=300,
+        random_seed=42
     )
 
     method = XTB()
 
     ts_optimizer = PRFOptimiser(
         maxiter=100,
-        gtol=1e-4,
-        etol=1e-3
+        gtol=1e-2,
+        etol=1e-2,
+        init_alpha=0.03,
+        recalc_hessian_every=5
     )
 
-    output = reaction._compute_sn2_barrier(
+    output = reaction._compute_e2_barrier(
         method=method,
         ts_optimizer=ts_optimizer
     )
