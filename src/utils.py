@@ -7,6 +7,25 @@ import numpy as np
 from tempfile import mkdtemp
 
 
+def unit_vector(vector):
+    """ Returns the unit vector of the vector.  """
+    return vector / np.linalg.norm(vector)
+
+def angle_between(v1, v2):
+    """ Returns the angle in degrees between vectors 'v1' and 'v2'::
+
+            >>> angle_between((1, 0, 0), (0, 1, 0))
+            1.5707963267948966
+            >>> angle_between((1, 0, 0), (1, 0, 0))
+            0.0
+            >>> angle_between((1, 0, 0), (-1, 0, 0))
+            3.141592653589793
+    """
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.rad2deg(np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)))
+
+
 class Atom:
     def __init__(self, atomic_symbol, x, y, z) -> None:
         self.atomic_symbol = atomic_symbol
@@ -177,7 +196,7 @@ from scipy.optimize import minimize
 
 
 def translate_rotate_reactant(
-    reactant, bond_rearrangement, shift_factor, random_seed, n_iters=10
+    reactant, bond_rearrangement, shift_factor, random_seed, tolerance = 0.1, n_iters=10
 ):
     """
     Shift a molecule in the reactant complex so that the attacking atoms
@@ -233,7 +252,7 @@ def translate_rotate_reactant(
             get_cost_rotate_translate,
             x0=np.random.random(11),
             method="BFGS",
-            tol=0.1,
+            tol=tolerance,
             args=(reactant, subst_centres, attacking_mol),
         )
 
