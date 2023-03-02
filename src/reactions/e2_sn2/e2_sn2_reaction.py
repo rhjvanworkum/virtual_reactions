@@ -83,11 +83,15 @@ class E2Sn2Reaction:
                 print(e)
                 continue
 
-            ts_guess.calc_hessian(method=method)
-            if ts_guess.imaginary_frequencies is not None:
-                for im_freq in ts_guess.imaginary_frequencies:
-                    if im_freq < self.threshold:
-                        barriers.append(ts_guess.energy - rc.energy)
-                        break
+            try:
+                ts_guess.calc_hessian(method=method)
+                if ts_guess.imaginary_frequencies is not None:
+                    for im_freq in ts_guess.imaginary_frequencies:
+                        if im_freq < self.threshold:
+                            barriers.append(ts_guess.energy - rc.energy)
+                            break
+            except Exception as e:
+                print(e)
+                continue
         
         return barriers

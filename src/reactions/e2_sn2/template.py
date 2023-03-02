@@ -96,12 +96,20 @@ class Sn2ReactionComplexTemplate:
         reaction_complex.charge = -1
 
         # constrained optimization of reaction complex
-        reaction_complex.constraints.distance = constraints
-        reaction_complex.optimise(method=method)
+        try:
+            reaction_complex.constraints.distance = constraints
+            reaction_complex.optimise(method=method)
+        except Exception as e:
+            print("failed at RC optimization")
+            return False, None, None
 
         # relaxed optimization of reaction complex
-        reaction_complex.constraints.distance = {}
-        reaction_complex.optimise(method=method)
+        try:
+            reaction_complex.constraints.distance = {}
+            reaction_complex.optimise(method=method)
+        except Exception as e:
+            print("failed at RC optimization")
+            return False, None, None
 
         # check conditions
         conditions_passed = []

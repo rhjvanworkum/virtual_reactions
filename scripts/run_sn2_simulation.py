@@ -17,9 +17,9 @@ from src.reactions.e2_sn2.template import E2Sn2ReactionIndices, Sn2ReactionCompl
 
 
 BASE_DIR = '/home/rhjvanworkum/virtual_reactions/calculations/'
-ade.Config.XTB.path = '/home/ruard/Programs/xtb-6.5.1/bin/xtb'
+ade.Config.XTB.path = '/home/rhjvanworkum/xtb-6.5.1/bin/xtb'
 ade.Config.max_atom_displacement = Distance(5.0, units="Å")
-N_CPUS = 30
+N_CPUS = 40
 # N_CPUS_CONFORMERS = 4
 
 def check_C_nuc_distance(
@@ -76,8 +76,10 @@ def get_reaction_barriers(args):
 
     ts_optimizer = PRFOptimiser(
         maxiter=100,
-        gtol=1e-4,
-        etol=1e-3
+        gtol=1e-3,
+        etol=1e-3,
+        init_alpha=0.01,
+        recalc_hessian_every=1
     )
 
     output = reaction._compute_sn2_barrier(
@@ -111,7 +113,7 @@ if __name__ == "__main__":
         "sn2_energies": energies,
     }
     df = pd.DataFrame(data)
-    df.to_csv('test.csv')
+    df.to_csv('test_2.csv')
 
 
 
