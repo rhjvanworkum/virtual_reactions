@@ -244,6 +244,7 @@ class E2ReactionComplexTemplate:
         reaction_complex._parent_atoms = [atom for atom in new_atoms]
         reaction_complex._coordinates = Coordinates(np.array([atom.coord for atom in new_atoms]))
         reaction_complex.charge = -1
+        reaction_complex.mult = 3
 
         # constrained optimization of reaction complex
         reaction_complex.constraints.distance = constraints

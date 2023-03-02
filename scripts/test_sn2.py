@@ -69,7 +69,8 @@ if __name__ == "__main__":
         indices=indices,
         sn2_reaction_complex_template=sn2_reaction_complex_template,
         e2_reaction_complex_template=None,
-        n_conformers=300
+        n_conformers=300,
+        random_seed=42
     )
 
     method = XTB()

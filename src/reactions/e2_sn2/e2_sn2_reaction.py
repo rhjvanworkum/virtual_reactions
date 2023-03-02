@@ -44,18 +44,21 @@ class E2Sn2Reaction:
         """ Construct Reaction Complexes """
         reaction_complexes = []
         for idx, conformer in enumerate(self.substrate.conformers):
-            success, rc, bond_rearran = self.sn2_reaction_complex_template.generate_reaction_complex(
-                conformer,
-                self.nucleophile,
-                self.e2sn2_indices,
-                method
-            )
-            if success:
-                reaction_complexes.append((rc, bond_rearran))
+            try:
+                success, rc, bond_rearran = self.sn2_reaction_complex_template.generate_reaction_complex(
+                    conformer,
+                    self.nucleophile,
+                    self.e2sn2_indices,
+                    method
+                )
+                if success:
+                    reaction_complexes.append((rc, bond_rearran))
+            except Exception as e:
+                continue
 
         if len(reaction_complexes) == 0:
             print("No sucesfull reaction complexes made")
-            return None
+            return [[0, 0, "no rc made"]]
 
         """ Construct TS initial guess """   
         ts_guesses = []
@@ -102,20 +105,22 @@ class E2Sn2Reaction:
         """ Construct Reaction Complexes """
         reaction_complexes = []
         for idx, conformer in enumerate(self.substrate.conformers):
-            success, rc, bond_rearran = self.e2_reaction_complex_template.generate_reaction_complex(
-                conformer,
-                self.nucleophile,
-                self.e2sn2_indices,
-                method
-            )
+            try:
+                success, rc, bond_rearran = self.e2_reaction_complex_template.generate_reaction_complex(
+                    conformer,
+                    self.nucleophile,
+                    self.e2sn2_indices,
+                    method
+                )
 
-            if success:
-                reaction_complexes.append((rc, bond_rearran))
-                write_xyz_file(rc.atoms, f'rc_{0}.xyz')
+                if success:
+                    reaction_complexes.append((rc, bond_rearran))
+            except Exception as e:
+                continue
 
         if len(reaction_complexes) == 0:
             print("No sucesfull reaction complexes made")
-            return None
+            return [[0, 0, "no rc made"]]
 
         """ Construct TS initial guess """   
         ts_guesses = []
