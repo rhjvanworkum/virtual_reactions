@@ -91,7 +91,6 @@ if __name__ == "__main__":
     # nucleophile_smiles = '[Cl-:9]'
     # indices = [[4, 3, 1, 8], [4, 3, 8]]
 
-
     # substrate_smiles = '[CH3:1][C@H:2]([Br:3])[N+:4](=[O:5])[O-:6]'
     # nucleophile_smiles = '[Cl-:7]'
     # indices = [[2, 1, 0, 6], [2, 1, 6]]
@@ -105,37 +104,14 @@ if __name__ == "__main__":
     indices = [[2, 1, 0, 5], [2, 1, 5]]
     idx = 0
 
-
-
-    # template = E2ReactionTemplate(
-    #     d_nucleophile=1.8,
-    #     d_leaving_group=1.8,
-    #     d_H=1.22
-    # )
-
-    # reaction = E2Sn2Reaction(
-    #     substrate_smiles=substrate_smiles,
-    #     nucleophile_smiles=nucleophile_smiles,
-    #     indices=indices,
-    #     reaction_complex_templates=[template],
-    #     transition_state_templates=[template]
-    # )
-
-    # conf_idx = 0
-    # rc, distance_constraints = template.generate_ts(
-    #     reaction.substrate.conformers[conf_idx], 
-    #     reaction.nucleophile_smiles,
-    #     reaction.e2sn2_indices
-    # )
-    # rc = Conformation(geometry=rc, charge=-1, mult=0)
-    # rc.to_xyz('test.xyz', 0)
-
-
-
-
+    test_consisten_atoms(
+        substrate_smiles,
+        nucleophile_smiles,
+        indices,
+        idx
+    )
 
     # class_data = pd.read_csv('./data/e2_sn2_classification_dataset.csv')[:90]
-
     # for idx, row in class_data.iterrows():
         # substrate_smiles = row['smiles'].split('.')[0]
         # nucleophile_smiles = row['smiles'].split('.')[1]
