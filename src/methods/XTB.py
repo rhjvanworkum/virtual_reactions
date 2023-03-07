@@ -72,40 +72,6 @@ def xtb(
             if "TOTAL ENERGY" in line:
                 energy = float(line.split()[-3])
 
-        geom = read_xyz_file(file_name)
-
-        atom_count = {}
-        for atom in molecule.conformers[conformer_idx]:
-            if atom.type not in atom_count.keys():
-                atom_count[atom.type] = 1
-            else:
-                atom_count[atom.type] += 1
-
-        atom_count_after = {}
-        for atom in geom:
-            if atom.type not in atom_count_after.keys():
-                atom_count_after[atom.type] = 1
-            else:
-                atom_count_after[atom.type] += 1
-        
-        corr = [atom_count[key] == atom_count_after[key] for key in atom_count.keys()]
-        if False in corr:
-            print('DETECTED ERROR IN XYZ FILEEE')
-
-        if energy is None:
-            t = time.time()
-            shutil.copy2(file_name, f'/home/rhjvanworkum/virtual_reactions/calculations/aaa/{t}.xyz')
-            with open(f'/home/rhjvanworkum/virtual_reactions/calculations/aaa/{t}.log', 'w') as f:
-                f.writelines(comment)
-            with open(f'/home/rhjvanworkum/virtual_reactions/calculations/aaa/{t}.log', 'w') as f:
-                f.writelines(output)
-
-            print(type(output))
-            print(output)
-            if "Some atoms in the start geometry are *very* close" not in output:
-                print('something else than atoms too close')
-
-
         if '--opt' in keywords and os.path.exists('xtbopt.xyz'):
             final_geometry = read_xyz_file('xtbopt.xyz')
         else:

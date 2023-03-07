@@ -77,11 +77,14 @@ class E2Sn2Reaction:
         """ TS optimization """
         barriers = []
         for (rc, ts_guess) in ts_guesses:
-            ts_optimizer.optimise(
-                species=ts_guess,
-                method=method,
-                maxiter=self.max_iter
-            )
+            try:
+                ts_optimizer.optimise(
+                    species=ts_guess,
+                    method=method,
+                    maxiter=self.max_iter
+                )
+            except Exception as e:
+                barriers.append([0, 0, "TS opt failed"])
 
             try:
                 ts_guess.calc_hessian(method=method)
@@ -140,11 +143,14 @@ class E2Sn2Reaction:
         """ TS optimization """
         barriers = []
         for (rc, ts_guess) in ts_guesses:
-            ts_optimizer.optimise(
-                species=ts_guess,
-                method=method,
-                maxiter=self.max_iter
-            )
+            try:
+                ts_optimizer.optimise(
+                    species=ts_guess,
+                    method=method,
+                    maxiter=self.max_iter
+                )
+            except Exception as e:
+                barriers.append([0, 0, "TS opt failed"])
 
             try:
                 ts_guess.calc_hessian(method=method)

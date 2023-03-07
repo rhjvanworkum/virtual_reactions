@@ -18,12 +18,12 @@ from src.reactions.e2_sn2.template import E2ReactionComplexTemplate, E2Sn2Reacti
 from src.utils import angle_between
 
 
-BASE_DIR = '/home/ruard/code/virtual_reactions/calculations/'
-N_PROCESSES = 2
-RANDOM_SEED = 42
+BASE_DIR = '/home/rhjvanworkum/virtual_reactions/calculations/'
+N_PROCESSES = 30
+RANDOM_SEED = 80
 
 ade.Config.n_cores = 4
-ade.Config.XTB.path = '/home/ruard/Programs/xtb-6.5.1/bin/xtb'
+ade.Config.XTB.path = '/home/rhjvanworkum/xtb-6.5.1/bin/xtb'
 ade.Config.max_atom_displacement = Distance(7.0, units="Å")
 ade.Config.rmsd_threshold = Distance(0.05, units="Å")
 
@@ -68,7 +68,7 @@ def get_reaction_barriers(args):
     # create temp dir here & checkout
     dir = os.path.join(BASE_DIR, f'{idx}_calc/')
     if os.path.exists(dir):
-        os.removedirs(dir)
+        shutil.rmtree(dir)
     os.makedirs(dir)
     os.chdir(dir)
 
@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
     arguments = []
 
-    for idx, row in class_data[:4].iterrows():
+    for idx, row in class_data.iterrows():
         substrate_smiles = row['smiles'].split('.')[0]
         nucleophile_smiles = row['smiles'].split('.')[1]
         indices = ast.literal_eval(row['products_run'])
