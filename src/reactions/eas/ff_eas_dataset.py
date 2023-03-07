@@ -1,61 +1,61 @@
-# from concurrent.futures import ProcessPoolExecutor
-# import os
-# from typing import Any, List, Literal, Tuple, Union
-# import pandas as pd
-# from tqdm import tqdm
-# import numpy as np
-# import ast
+from concurrent.futures import ProcessPoolExecutor
+import os
+from typing import Any, List, Literal, Tuple, Union
+import pandas as pd
+from tqdm import tqdm
+import numpy as np
+import ast
 
-# from src.reactions.eas.eas_reaction import EASReaction
-# from src.dataset import Dataset, SimulatedDataset
-# from src.split import Split
-
-
-# SIMULATION_IDX_ATOM = ['H', 'He', 'Li', 'Be']
+from src.reactions.eas.eas_reaction import EASReaction
+from src.dataset import Dataset, SimulatedDataset
+from src.split import Split
 
 
-# def get_conformer_energies(args):
-#     substrate_smiles, product_smiles = args
+SIMULATION_IDX_ATOM = ['H', 'He', 'Li', 'Be']
 
-#     reaction = EASReaction(
-#         substrate_smiles=substrate_smiles,
-#         product_smiles=product_smiles
-#     )
 
-#     return reaction.compute_conformer_energies()
+def get_conformer_energies(args):
+    substrate_smiles, product_smiles = args
 
-# class XtbSimulatedEasDataset(SimulatedDataset):
+    reaction = EASReaction(
+        substrate_smiles=substrate_smiles,
+        product_smiles=product_smiles
+    )
 
-#     def __init__(
-#         self,
-#         csv_file_path: str
-#     ) -> None:
-#         super().__init__(
-#             csv_file_path=csv_file_path,
-#             n_simulations=1
-#         )
+    return reaction.compute_conformer_energies()
 
-#     def _simulate_reactions(
-#         substrates: Union[str, List[str]],
-#         products: Union[str, List[str]],
-#         simulation_idx: int,
-#         n_cpus: int
-#     ) -> List[Any]:
-#         assert simulation_idx == 0
-#         arguments = [
-#             (substrate.split('.')[0], product) for substrate, product in zip(substrates, products)
-#         ]
-#         with ProcessPoolExecutor(max_workers=n_cpus) as executor:
-#             results = list(tqdm(executor.map(get_conformer_energies, arguments), total=len(arguments)))
-#         return results
+class XtbSimulatedEasDataset(SimulatedDataset):
 
-#     def _select_reaction_to_simulate(
-#         source_dataset: Dataset
-#     ) -> Tuple[List[str, int]]:
-#         source_data = source_dataset.load()
-#         return source_data['substrates'].values, \
-#                source_data['products'].values, \
-#                source_data['reaction_idx'].values
+    def __init__(
+        self,
+        csv_file_path: str
+    ) -> None:
+        super().__init__(
+            csv_file_path=csv_file_path,
+            n_simulations=1
+        )
+
+    def _simulate_reactions(
+        substrates: Union[str, List[str]],
+        products: Union[str, List[str]],
+        simulation_idx: int,
+        n_cpus: int
+    ) -> List[Any]:
+        assert simulation_idx == 0
+        arguments = [
+            (substrate.split('.')[0], product) for substrate, product in zip(substrates, products)
+        ]
+        with ProcessPoolExecutor(max_workers=n_cpus) as executor:
+            results = list(tqdm(executor.map(get_conformer_energies, arguments), total=len(arguments)))
+        return results
+
+    def _select_reaction_to_simulate(
+        source_dataset: Dataset
+    ) -> Tuple[List[str, int]]:
+        source_data = source_dataset.load()
+        return source_data['substrates'].values, \
+               source_data['products'].values, \
+               source_data['reaction_idx'].values
 
 
 # class XtbSimulatedExtendedEasDataset(XtbSimulatedEasDataset):

@@ -1,12 +1,10 @@
-from typing import List, Union
-import rdkit
+from typing import Callable, List, Literal, Optional, Union
 from rdkit import Chem
 from rdkit.Chem import AllChem
+
 from src.methods.XTB import xtb
-
-
 from src.compound import Compound, Conformation
-
+from src.reactions.eas.eas_methods import EASMethod
 
 class EASReaction:
     rxns = [
@@ -18,8 +16,16 @@ class EASReaction:
         self,
         substrate_smiles: str,
         product_smiles: str,
+        method: EASMethod,
+        has_openmm_compatability: bool = False
     ) -> None:
-        self.substrate = Compound.from_smiles(substrate_smiles)
+        self.method = method
+        self.has_openmm_compatability = has_openmm_compatability
+
+        self.substrate = Compound.from_smiles(
+            substrate_smiles, 
+            has_openmm_compatability=has_openmm_compatability
+        )
         self.substrate.generate_conformers()
         self.substrate.optimize_conformers()
 
@@ -42,7 +48,7 @@ class EASReaction:
         product = products[0]
         Chem.SanitizeMol(product)
         product = Chem.AddHs(product)
-        return Compound(product)
+        return Compound(product, self.has_openmm_compatability)
 
     def compute_energy(
         self,
@@ -50,13 +56,8 @@ class EASReaction:
         conformer_idx: int
     ) -> float:
         if molecule.conformers[conformer_idx] is not None:
-            energy, _ = xtb(
-                molecule=molecule,
-                conformer_idx=conformer_idx,
-                keywords=['--opt'],
-                method='2',
-                solvent='Methanol',
-                xcontrol_file=None
+            energy = self.method.compute_energy(
+                molecule, conformer_idx, 'Methanol'
             )
         else:
             energy = None

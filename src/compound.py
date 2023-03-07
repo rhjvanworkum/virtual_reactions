@@ -1,4 +1,12 @@
-import os
+try:
+    import openmm
+    from openmm import LangevinIntegrator, app, unit
+    from openmm import *
+except ImportError:
+    from simtk import openmm, unit
+    from simtk.openmm import LangevinIntegrator, app
+    from simtk.openmm import *
+
 from typing import List
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from src.methods.XTB import run_xtb
@@ -9,8 +17,23 @@ import rdkit
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem.rdPartialCharges import ComputeGasteigerCharges
+from openff.toolkit.topology import Molecule
+from openff.toolkit.typing.engines.smirnoff import ForceField
 
-from src.utils import Atom, write_xyz_file
+from src.utils import Atom, EditedRDKitToolkitWrapper, write_xyz_file
+
+def _compute_rdkit_partial_charges(
+    mol: Chem.Mol
+) -> openmm.unit.Quantity:
+    ComputeGasteigerCharges(mol)
+    pc = openmm.unit.Quantity(
+        value=np.array(
+            [float(a.GetProp("_GasteigerCharge")) for a in mol.GetAtoms()]
+        ),
+        unit=openmm.unit.constants.elementary_charge,
+    )
+    return pc
 
 def convert_rdkit_conformer(
     mol,
@@ -46,20 +69,30 @@ class Compound:
 
     def __init__(
         self,
-        rdkit_mol: Chem.Mol
+        rdkit_mol: Chem.Mol,
+        has_openmm_compatability: bool = False
     ) -> None:
         self.rdkit_mol = rdkit_mol
-
         self.charge = Chem.rdmolops.GetFormalCharge(self.rdkit_mol)
         self.mult = 0
 
         self.conformers = []
 
+        self.has_openmm_compatability = has_openmm_compatability
+        if self.has_openmm_compatability:
+            smiles = Chem.MolToSmiles(Chem.RemoveHs(self.rdkit_mol))
+            self.ff_mol = EditedRDKitToolkitWrapper().from_smiles(smiles, allow_undefined_stereo=True)
+            self.ff_mol.partial_charges = _compute_rdkit_partial_charges(
+                self.rdkit_mol
+            )
+            self.openmm_conformers = []
+            self.mol_topology = self.ff_mol.to_topology()
+
     @classmethod
-    def from_smiles(cls, smiles: str):
+    def from_smiles(cls, smiles: str, **kwargs):
         rdkit_mol = Chem.MolFromSmiles(smiles)
         rdkit_mol = Chem.AddHs(rdkit_mol)
-        return cls(rdkit_mol)
+        return cls(rdkit_mol, **kwargs)
 
     def to_xyz(
         self, 
@@ -68,6 +101,13 @@ class Compound:
     ) -> None:
         conformer = self.conformers[conformer_idx]
         write_xyz_file(conformer, xyz_file_name)
+
+    def _set_openmm_conformers(self):
+        self.openmm_conformers = [
+            openmm.unit.Quantity(
+                value=np.array([[atom.x, atom.y, atom.z] for atom in conf]), unit=openmm.unit.constants.angstrom
+            ) for conf in self.conformers
+        ]
 
     def generate_conformers(
         self,
@@ -96,6 +136,9 @@ class Compound:
                 )
             )
 
+        if self.has_openmm_compatability:
+            self._set_openmm_conformers()
+
     def optimize_conformers(
         self,
         num_cpu: int = 4,
@@ -110,7 +153,6 @@ class Compound:
             (self, keywords, idx, method, solvent, xcontrol_file) for idx in range(len(self.conformers))
         ]
 
-        # results = [run_xtb(args) for args in xtb_arguments]
         with ProcessPoolExecutor(max_workers=num_cpu) as executor:
             results = executor.map(run_xtb, xtb_arguments)
 
@@ -120,7 +162,7 @@ class Compound:
             if energy is not None and geometry is not None:
                 energies.append(energy)
                 geometries.append(geometry)
-        
+
         energies = np.array(energies)
         rel_energies = energies - np.min(energies) #covert to relative energies
         below_cutoff = (rel_energies <= conf_cutoff).sum() #get number of conf below cutoff
@@ -129,3 +171,5 @@ class Compound:
         best_conformers = [item[0] for item in conf_tuble]
 
         self.conformers = best_conformers
+        if self.has_openmm_compatability:
+            self._set_openmm_conformers()
