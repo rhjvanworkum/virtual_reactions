@@ -89,13 +89,16 @@ class E2Sn2Reaction:
             try:
                 ts_guess.calc_hessian(method=method)
             except Exception as e:
-                if isinstance(e, ade.exceptions.CouldNotGetProperty):
+                if isinstance(e, ade.exceptions.CouldNotGetProperty) and ts_guess.energy is not None:
                     barriers.append([ts_guess.energy - rc.energy, 0, "Hessian calc failed"])
 
-            if ts_guess.imaginary_frequencies is not None:
-                barriers.append([ts_guess.energy - rc.energy, min(ts_guess.imaginary_frequencies), ""])
+            if ts_guess.energy is None:
+                barriers.append([0, 0, "TS opt failed"])
             else:
-                barriers.append([ts_guess.energy - rc.energy, 0, "No imaginary frequencies"])
+                if ts_guess.imaginary_frequencies is not None:
+                    barriers.append([ts_guess.energy - rc.energy, min(ts_guess.imaginary_frequencies), ""])
+                else:
+                    barriers.append([ts_guess.energy - rc.energy, 0, "No imaginary frequencies"])
         
         return barriers
 
@@ -155,12 +158,15 @@ class E2Sn2Reaction:
             try:
                 ts_guess.calc_hessian(method=method)
             except Exception as e:
-                if isinstance(e, ade.exceptions.CouldNotGetProperty):
+                if isinstance(e, ade.exceptions.CouldNotGetProperty) and ts_guess.energy is not None:
                     barriers.append([ts_guess.energy - rc.energy, 0, "Hessian calc failed"])
 
-            if ts_guess.imaginary_frequencies is not None:
-                barriers.append([ts_guess.energy - rc.energy, min(ts_guess.imaginary_frequencies), ""])
+            if ts_guess.energy is None:
+                barriers.append([0, 0, "TS opt failed"])
             else:
-                barriers.append([ts_guess.energy - rc.energy, 0, "No imaginary frequencies"])
+                if ts_guess.imaginary_frequencies is not None:
+                    barriers.append([ts_guess.energy - rc.energy, min(ts_guess.imaginary_frequencies), ""])
+                else:
+                    barriers.append([ts_guess.energy - rc.energy, 0, "No imaginary frequencies"])
         
         return barriers

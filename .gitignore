@@ -4,7 +4,6 @@ results/
 *.png
 *.out
 *.xyz
-tests/
 experiments/
 
 

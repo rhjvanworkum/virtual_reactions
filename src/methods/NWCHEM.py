@@ -56,7 +56,7 @@ def nwchem(
 ):
     @work_in_tmp_dir(
         filenames_to_copy=[],
-        kept_file_exts=(),
+        kept_file_exts=('.out'),
     )
     def execute_nwchem():
         with open('test.in', "w") as inp_file:
@@ -106,6 +106,8 @@ def nwchem(
         with open('test.out', 'r') as f:
             lines = f.readlines()
 
+        print(lines)
+
         energy = energy_from(lines)
         if '--opt' in keywords:
             geom = coordinates_from(lines)
@@ -115,6 +117,7 @@ def nwchem(
         return energy, geom
 
     energy, final_geometry = execute_nwchem()
+    print(energy)
     return energy, final_geometry 
 
 if __name__ == "__main__":

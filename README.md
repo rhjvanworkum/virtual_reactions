@@ -6,3 +6,6 @@ List of todo's:
 
 - recalculate hessian at each step
 - play with stepsize a bit
+
+
+sbatch --cpus-per-task=4 --tasks-per-node=30 --output=job_%A.out test.sh
