@@ -89,7 +89,6 @@ def nwchem(
             else:
                 print(f"task dft", file=inp_file)
 
-
         params = [
             "mpirun",
             "-np",

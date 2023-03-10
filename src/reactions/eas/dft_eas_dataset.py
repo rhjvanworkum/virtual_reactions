@@ -13,8 +13,8 @@ def get_conformer_energies(args):
     substrate_smiles, product_smiles = args
 
     method = EASDFT(
-        'B3LYP',
-        '6-311g'
+        functional='B3LYP',
+        basis_set='6-311g'
     )
 
     reaction = EASReaction(
