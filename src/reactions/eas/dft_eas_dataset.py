@@ -1,16 +1,10 @@
 from concurrent.futures import ProcessPoolExecutor
-import os
-from typing import Any, List, Literal, Tuple, Union
-import pandas as pd
+from typing import Any, List, Tuple, Union
 from tqdm import tqdm
-import numpy as np
-import ast
 
 from src.reactions.eas.eas_reaction import EASReaction
-from src.reactions.eas.eas_methods import eas_xtb_method
+from src.reactions.eas.eas_methods import EASDFT, eas_ff_methods
 from src.dataset import Dataset, SimulatedDataset
-from src.split import Split
-
 
 SIMULATION_IDX_ATOM = ['H', 'He', 'Li', 'Be']
 
@@ -18,15 +12,20 @@ SIMULATION_IDX_ATOM = ['H', 'He', 'Li', 'Be']
 def get_conformer_energies(args):
     substrate_smiles, product_smiles = args
 
+    method = EASDFT(
+        'B3LYP',
+        '6-311g'
+    )
+
     reaction = EASReaction(
         substrate_smiles=substrate_smiles,
         product_smiles=product_smiles,
-        method=eas_xtb_method
+        method=method
     )
 
     return reaction.compute_conformer_energies()
 
-class XtbSimulatedEasDataset(SimulatedDataset):
+class DFTSimulatedEasDataset(SimulatedDataset):
 
     def __init__(
         self,
@@ -60,32 +59,3 @@ class XtbSimulatedEasDataset(SimulatedDataset):
         return source_data['substrates'].values, \
                source_data['products'].values, \
                source_data['reaction_idx'].values
-
-
-class XtbSimulatedExtendedEasDataset(XtbSimulatedEasDataset):
-
-    def __init__(
-        self,
-        csv_file_path: str,
-        split_object: Split,
-        similarity_set: Literal["train", "test"] = "train"
-    ) -> None:
-        super().__init__(
-            csv_file_path=csv_file_path,
-        )
-
-        self.split_object = split_object
-        self.similarity_set = similarity_set
-
-    def _select_reaction_to_simulate(
-        self,
-        source_dataset: Dataset
-    ) -> Tuple[List[Union[str, int]]]:
-        source_data = source_dataset.load()
-
-        substrates = source_data['substrates'].values
-        products = source_data['products'].values
-        reaction_idxs = source_data['reaction_idx'].values
-
-        # write code here to query chembl compounds for new reactions
-        # train
