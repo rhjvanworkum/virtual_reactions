@@ -1,5 +1,4 @@
 import os
-import shutil
 import subprocess
 from typing import Any, List, Optional
 import time
@@ -81,6 +80,9 @@ def xtb(
     
     energy, final_geometry = execute_xtb()
     return energy, final_geometry 
+
+
+
 
 if __name__ == "__main__":
     from src.compound import Compound
