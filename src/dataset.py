@@ -67,6 +67,7 @@ class SimulatedDataset(Dataset):
         self.n_simulations = n_simulations
 
     def _simulate_reactions(
+        self,
         substrates: Union[str, List[str]],
         products: Union[str, List[str]],
         simulation_idx: int,
@@ -78,6 +79,7 @@ class SimulatedDataset(Dataset):
         raise NotImplementedError
 
     def _select_reaction_to_simulate(
+        self,
         source_dataset: Dataset
     ) -> None:
         """
@@ -106,7 +108,7 @@ class SimulatedDataset(Dataset):
             assert len(simulation_results) == len(substrates) == len(products)
 
             for idx, result in enumerate(simulation_results):
-                uids.append(max(source_data['uid'].values) + idx)
+                uids.append(max(source_data['uid'].values) + len(uids) + 1)
                 df_reaction_idxs.append(reaction_idxs[idx])
                 df_substrates.append(substrates[idx])
                 df_products.append(products[idx])
@@ -144,6 +146,9 @@ class SimulatedDataset(Dataset):
             for simulation_idx in range(self.n_simulations):
                 virtual_dataframe = dataframe[dataframe['simulation_idx'] == simulation_idx + 1]
 
+                # filter out reactions that "failed"
+                virtual_dataframe = virtual_dataframe.dropna(subset=['conformer_energies'])
+
                 # drop label column
                 virtual_dataframe = virtual_dataframe.drop(columns=['label'])
 
@@ -177,7 +182,6 @@ class SimulatedDataset(Dataset):
             # drop conformer energy column & duplicates
             dataframe = pd.concat(dataframes)
             dataframe = dataframe.drop(columns=['conformer_energies'])
-            # TODO: drop duplicates here
             dataframe = dataframe.drop_duplicates(subset=['uid'])
 
             # check for selection
