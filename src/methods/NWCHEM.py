@@ -106,8 +106,6 @@ def nwchem(
         with open('test.out', 'r') as f:
             lines = f.readlines()
 
-        print(lines)
-
         energy = energy_from(lines)
         if '--opt' in keywords:
             geom = coordinates_from(lines)
