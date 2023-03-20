@@ -32,6 +32,9 @@ class Atom:
         self.x = x
         self.y = y
         self.z = z
+
+    def to_list(self):
+        return [self.atomic_symbol, self.x, self.y, self.z]
   
     @property
     def coordinates(self):
@@ -52,7 +55,7 @@ def read_xyz_file(filename):
     _ = f.readline()
 
     for i in range(n_atoms):
-      data = f.readline().replace('\n', '').split(' ')
+      data = f.readline().replace('\n', '').replace('\t', ' ').split(' ')
       data = list(filter(lambda a: a != '', data))
       atoms.append(Atom(data[0], float(data[1]), float(data[2]), float(data[3])))
 
@@ -67,11 +70,11 @@ def write_xyz_file(atoms: List[Atom], filename: str):
     for atom in atoms:
         f.write(atom.atomic_symbol)
         for cartesian in ['x', 'y', 'z']:
-            if getattr(atom, cartesian) < 0:
+            if getattr(atom.coord, cartesian) < 0:
                 f.write('         ')
             else:
                 f.write('          ')
-            f.write("%.5f" % getattr(atom, cartesian))
+            f.write("%.5f" % getattr(atom.coord, cartesian))
         f.write('\n')
     
     f.write('\n')

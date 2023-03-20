@@ -1,0 +1,8 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/ruard/code/autodE/"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/ruard/code/autodE/"
+    ]
+}

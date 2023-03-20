@@ -56,7 +56,7 @@ class Sn2ReactionComplexTemplate:
         )
         return bond_rearr
 
-
+    # TODO: check if RC & PC are actually the same!!!
     def generate_reaction_complex(
         self,
         substrate: ade.Species,
@@ -102,7 +102,7 @@ class Sn2ReactionComplexTemplate:
             reaction_complex.optimise(method=method)
         except Exception as e:
             print("failed at RC optimization")
-            return False, None, None
+            return False, None, None, None
 
         # relaxed optimization of reaction complex
         try:
@@ -110,8 +110,8 @@ class Sn2ReactionComplexTemplate:
             reaction_complex.optimise(method=method)
         except Exception as e:
             print("failed at RC optimization")
-            return False, None, None
-
+            return False, None, None, None
+    
         # check conditions
         conditions_passed = []
         for check in self.checks:
@@ -124,8 +124,75 @@ class Sn2ReactionComplexTemplate:
                     nucleophile.atoms[0].atomic_symbol
                 )
             )
+
+        if (False not in conditions_passed):
+            # product complex
+            product_complex = ade.Species(
+                name=f'pc_{reaction_complex.name}',
+                atoms=reaction_complex.atoms,
+                charge=-1,
+                mult=1
+            )
+
+            distance = self.dist_dict[nucleophile.atoms[0].atomic_symbol]
+            constraints = {
+                (indices.central_atom_idx, len(product_complex.atoms) - 1): distance
+            }
+
+            # constrained optimization of reaction complex
+            try:
+                product_complex.constraints.distance = constraints
+                product_complex.optimise(method=method)
+            except Exception as e:
+                print("failed at PC optimization")
+                return False, None, None, None
+
+            # relaxed optimization of reaction complex
+            try:
+                product_complex.constraints.distance = {}
+                product_complex.optimise(method=method)
+            except Exception as e:
+                print("failed at PC optimization")
+                return False, None, None, None
+            
+            return True, reaction_complex, product_complex, bond_rearrangement
+        else:
+            return False, None, None, None
+
+    # def generate_product_complex(
+    #     self,
+    #     reaction_complex: ade.Species,
+    #     nucleophile: ade.Species,
+    #     indices: E2Sn2ReactionIndices,
+    #     method: ade.methods
+    # ):
+    #     reaction_complex = reaction_complex.copy()
+    #     print(reaction_complex.charge, reaction_complex.mult)
+
+    #     distance = self.dist_dict[nucleophile.atoms[0].atomic_symbol]
+    #     constraints = {
+    #         (indices.central_atom_idx, len(reaction_complex.atoms) - 1): distance
+    #     }
+
+    #     # constrained optimization of reaction complex
+    #     try:
+    #         reaction_complex.constraints.distance = constraints
+    #         reaction_complex.optimise(method=method)
+    #     except Exception as e:
+    #         print("failed at RC optimization")
+    #         return False, None, None
+
+    #     # relaxed optimization of reaction complex
+    #     try:
+    #         reaction_complex.constraints.distance = {}
+    #         reaction_complex.optimise(method=method)
+    #     except Exception as e:
+    #         print("failed at RC optimization")
+    #         return False, None, None
         
-        return (False not in conditions_passed), reaction_complex, bond_rearrangement
+    #     return True, reaction_complex, None
+
+
 
 def get_hs(
     reaction_complex: ade.Species, 
