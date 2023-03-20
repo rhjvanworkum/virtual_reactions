@@ -5,6 +5,7 @@ results/
 *.out
 *.xyz
 experiments/
+test_2.csv
 
 
 # Byte-compiled / optimized / DLL files

@@ -91,7 +91,7 @@ def nwchem(
 
         params = [
             "mpirun",
-            "-np",
+            "-n",
             str(n_cores),
             "nwchem",
             'test.in',
@@ -115,7 +115,6 @@ def nwchem(
         return energy, geom
 
     energy, final_geometry = execute_nwchem()
-    print(energy)
     return energy, final_geometry 
 
 if __name__ == "__main__":

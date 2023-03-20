@@ -8,4 +8,7 @@ List of todo's:
 - play with stepsize a bit
 
 
-sbatch --cpus-per-task=4 --tasks-per-node=30 --output=job_%A.out test.sh
+sbatch --cpus-per-task=8 --ntasks=1 --output=job_%A.out test.sh
+
+
+mpirun -np 8 -> uses 8 tasks, cpus-per-task than indicates how many cores are allocated to each task

@@ -12,7 +12,7 @@ from openff.toolkit.typing.engines.smirnoff import ForceField
 import os
 from typing import List, Optional
 from src.methods.NWCHEM import nwchem
-
+from src.methods.pyscf import pyscf
 from src.methods.XTB import xtb
 from src.compound import Compound, Conformation
 
@@ -62,16 +62,18 @@ class EASDFT(EASMethod):
     def __init__(
         self,
         functional: str,
-        basis_set: str
+        basis_set: str,
+        n_cores: int = 4
     ) -> None:
         self.functional = functional
         self.basis_set = basis_set
+        self.n_cores = n_cores
 
     def compute_energy(
         self,
         molecule: Compound,
         conformer_idx: int,
-        solvent: str = 'Methanol'
+        solvent: str = 'Methanol',
     ) -> float:
         energy, _ = nwchem(
             molecule=molecule,
@@ -79,9 +81,39 @@ class EASDFT(EASMethod):
             keywords=['--opt'],
             solvent=solvent,
             functional=self.functional,
-            basis_set=self.basis_set
+            basis_set=self.basis_set,
+            n_cores=self.n_cores
         )
         return energy
+
+class EASDFTPySCF(EASMethod):
+    def __init__(
+        self,
+        functional: str,
+        basis_set: str,
+        n_cores: int = 4
+    ) -> None:
+        self.functional = functional
+        self.basis_set = basis_set
+        self.n_cores = n_cores
+
+    def compute_energy(
+        self,
+        molecule: Compound,
+        conformer_idx: int,
+        solvent: str = 'Methanol',
+    ) -> float:
+        energy, _ = pyscf(
+            molecule=molecule,
+            conformer_idx=conformer_idx,
+            keywords=['--opt'],
+            solvent=solvent,
+            functional=self.functional,
+            basis_set=self.basis_set,
+            n_cores=self.n_cores
+        )
+        return energy
+
 
 
 """

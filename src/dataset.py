@@ -93,7 +93,9 @@ class SimulatedDataset(Dataset):
         n_cpus: int
     ) -> None:
         source_data = source_dataset.load()
-        substrates, products, reaction_idxs = self._select_reaction_to_simulate(source_dataset)
+        substrates, products, compute_product_only_list, reaction_idxs = self._select_reaction_to_simulate(source_dataset)
+
+        substrate_energies_list = {}
 
         uids = []
         df_reaction_idxs = []
@@ -104,10 +106,19 @@ class SimulatedDataset(Dataset):
         simulation_idxs = []        
         for simulation_idx in range(self.n_simulations):
         
-            simulation_results = self._simulate_reactions(substrates, products, simulation_idx, n_cpus)
-            assert len(simulation_results) == len(substrates) == len(products)
+            simulation_results = self._simulate_reactions(substrates, products, compute_product_only_list, simulation_idx, n_cpus)
+            assert len(simulation_results) == len(substrates) == len(products) == len(compute_product_only_list)
 
             for idx, result in enumerate(simulation_results):
+                # look up results for earlier calculated substrate
+                if compute_product_only_list[idx]:
+                    result = [
+                        substrate_energies_list[substrates[idx]],
+                        result[1]
+                    ]
+                else:
+                    substrate_energies_list[substrates[idx]] = result[0]
+                # add other properties
                 uids.append(max(source_data['uid'].values) + len(uids) + 1)
                 df_reaction_idxs.append(reaction_idxs[idx])
                 df_substrates.append(substrates[idx])
