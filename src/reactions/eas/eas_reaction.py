@@ -17,17 +17,20 @@ class EASReaction:
         substrate_smiles: str,
         product_smiles: str,
         method: EASMethod,
-        has_openmm_compatability: bool = False
+        has_openmm_compatability: bool = False,
+        compute_product_only: bool = False
     ) -> None:
         self.method = method
         self.has_openmm_compatability = has_openmm_compatability
+        self.compute_product_only = compute_product_only
 
-        self.substrate = Compound.from_smiles(
-            substrate_smiles, 
-            has_openmm_compatability=has_openmm_compatability
-        )
-        self.substrate.generate_conformers()
-        self.substrate.optimize_conformers()
+        if not self.compute_product_only:
+            self.substrate = Compound.from_smiles(
+                substrate_smiles, 
+                has_openmm_compatability=has_openmm_compatability
+            )
+            self.substrate.generate_conformers()
+            self.substrate.optimize_conformers()
 
         self.transition_state = self._generate_protonated_ts(product_smiles)
         self.transition_state.generate_conformers()
@@ -72,8 +75,9 @@ class EASReaction:
             []
         ]
 
-        for sub_conf_idx in range(len(self.substrate.conformers)):
-            energies[0].append(self.compute_energy(self.substrate, sub_conf_idx))
+        if not self.compute_product_only:
+            for sub_conf_idx in range(len(self.substrate.conformers)):
+                energies[0].append(self.compute_energy(self.substrate, sub_conf_idx))
         
         for ts_conf_idx in range(len(self.transition_state.conformers)):
             energies[1].append(self.compute_energy(self.transition_state, ts_conf_idx))

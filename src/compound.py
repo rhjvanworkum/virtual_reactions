@@ -7,11 +7,15 @@ except ImportError:
     from simtk.openmm import LangevinIntegrator, app
     from simtk.openmm import *
 
+import time
+
 from typing import List
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from src.methods.XTB import run_xtb
 import numpy as np
 from operator import itemgetter
+
+import autode as ade
 
 import rdkit
 from rdkit import Chem
@@ -70,11 +74,12 @@ class Compound:
     def __init__(
         self,
         rdkit_mol: Chem.Mol,
-        has_openmm_compatability: bool = False
+        has_openmm_compatability: bool = False,
+        mult: int = 0
     ) -> None:
         self.rdkit_mol = rdkit_mol
         self.charge = Chem.rdmolops.GetFormalCharge(self.rdkit_mol)
-        self.mult = 0
+        self.mult = mult
 
         self.conformers = []
 
@@ -101,6 +106,19 @@ class Compound:
     ) -> None:
         conformer = self.conformers[conformer_idx]
         write_xyz_file(conformer, xyz_file_name)
+
+    def to_autode_mol(
+        self,
+        conformer_idx: int
+    ) -> ade.Species:
+        return ade.Species(
+            name=str(time.time()),
+            atoms=[
+                Atom(atomic_symbol=atom.atomic_symbol, x=atom.x, y=atom.y, z=atom.z) for atom in self.conformers[conformer_idx]
+            ],
+            charge=self.charge,
+            mult=self.mult
+        )
 
     def _set_openmm_conformers(self):
         self.openmm_conformers = [
