@@ -8,7 +8,7 @@ import autode as ade
 from autode.opt.optimisers import PRFOptimiser
 from autode.input_output import xyz_file_to_atoms
 from autode.wrappers.XTB import XTB
-from src.reactions.e2_sn2.template import E2Sn2ReactionIndices
+from src.reactions.e2_sn2.old.template import E2Sn2ReactionIndices
 
 from a_export_sn2_structures import sn2_reaction_complex_template
 from src.utils import write_xyz_file

@@ -1,172 +1,52 @@
-import autode as ade
-from autode.conformers.conformer import Conformer
-from autode.species.complex import Complex
+from typing import List, Any, Tuple
+from rdkit import Chem
 
-from typing import List
-
-from src.reactions.e2_sn2.template import E2Sn2ReactionIndices
-from src.utils import write_xyz_file, translate_rotate_reactant
-
+from src.utils import Atom
+from src.compound import Compound
 
 class E2Sn2Reaction:
 
     def __init__(
         self,
-        substrate_smiles: str,
-        nucleophile_smiles: str,
-        indices: List[List[int]],
-        sn2_reaction_complex_template, # : List[ReactionTemplate],
-        e2_reaction_complex_template, # : List[ReactionTemplate],
-        n_conformers: int = 100,
-        max_iter: int = 100,
-        random_seed: int = 42
+        reactant_conformers: List[List[Atom]],
+        ts: List[Atom],
+        product_conformers: List[List[Atom]],
+        method: Any,
     ) -> None:
-        self.nucleophile = ade.Molecule(smiles=nucleophile_smiles)
-        self.substrate = ade.Molecule(smiles=substrate_smiles)
-        self.substrate._generate_conformers(n_conformers, random_seed)
+        self.reactant_conformers = reactant_conformers
+        self.ts = ts
+        self.product_conformers = product_conformers
 
-        indices = indices[len(indices[0]) != 4]
-        indices[-1] = -1
-        self.e2sn2_indices = E2Sn2ReactionIndices(*indices)
+        self.method = method
 
-        self.sn2_reaction_complex_template = sn2_reaction_complex_template
-        self.e2_reaction_complex_template = e2_reaction_complex_template
-
-        self.max_iter = max_iter
-        self.threshold = -30
-        self.random_seed = random_seed
-
-    def _compute_sn2_barrier(
-        self,
-        method,
-        ts_optimizer
-    ):
-        """ Construct Reaction Complexes """
-        reaction_complexes = []
-        for idx, conformer in enumerate(self.substrate.conformers):
-            try:
-                success, rc, bond_rearran = self.sn2_reaction_complex_template.generate_reaction_complex(
-                    conformer,
-                    self.nucleophile,
-                    self.e2sn2_indices,
-                    method
-                )
-                if success:
-                    reaction_complexes.append((rc, bond_rearran))
-            except Exception as e:
-                continue
-
-        if len(reaction_complexes) == 0:
-            print("No sucesfull reaction complexes made")
-            return [[0, 0, "no rc made"]]
-
-        """ Construct TS initial guess """   
-        ts_guesses = []
-        for rc, bond_rearran in reaction_complexes:
-            mol_1 = Conformer(atoms=rc.atoms[:-1])
-            mol_2 = Conformer(atoms=rc.atoms[-1:], charge=-1)
-            ts_guess = Complex(mol_1, mol_2)
-            translate_rotate_reactant(
-                ts_guess,
-                bond_rearrangement=bond_rearran,
-                shift_factor=1.5 if ts_guess.charge == 0 else 2.5,
-                random_seed=self.random_seed
-            )
-            ts_guesses.append((rc, ts_guess))
-
-        """ TS optimization """
-        barriers = []
-        for (rc, ts_guess) in ts_guesses:
-            try:
-                ts_optimizer.optimise(
-                    species=ts_guess,
-                    method=method,
-                    maxiter=self.max_iter
-                )
-            except Exception as e:
-                barriers.append([0, 0, "TS opt failed"])
-
-            try:
-                ts_guess.calc_hessian(method=method)
-            except Exception as e:
-                if isinstance(e, ade.exceptions.CouldNotGetProperty) and ts_guess.energy is not None:
-                    barriers.append([ts_guess.energy - rc.energy, 0, "Hessian calc failed"])
-
-            if ts_guess.energy is None:
-                barriers.append([0, 0, "TS opt failed"])
-            else:
-                if ts_guess.imaginary_frequencies is not None:
-                    barriers.append([ts_guess.energy - rc.energy, min(ts_guess.imaginary_frequencies), ""])
-                else:
-                    barriers.append([ts_guess.energy - rc.energy, 0, "No imaginary frequencies"])
+    def compute_activation_energies(self) -> List[float]:
+        reactant_energies = []
+        for conf in self.reactant_conformers:
+            mol = Compound(Chem.MolFromSmiles('C'))
+            mol.charge = -1
+            mol.conformers = [conf]
+            reactant_energies.append(self.method.single_point(mol, 0, None))
         
-        return barriers
+        mol = Compound(Chem.MolFromSmiles('C'))
+        mol.charge = -1
+        mol.conformers = [self.ts]
+        ts_energy = self.method.single_point(mol, 0, None)
 
-    def _compute_e2_barrier(
-        self,
-        method,
-        ts_optimizer,
-        random_seed: int = 42
-    ):
-        """ Construct Reaction Complexes """
-        reaction_complexes = []
-        for idx, conformer in enumerate(self.substrate.conformers):
-            try:
-                success, rc, bond_rearran = self.e2_reaction_complex_template.generate_reaction_complex(
-                    conformer,
-                    self.nucleophile,
-                    self.e2sn2_indices,
-                    method
-                )
+        return [ts_energy - reac_energy if (ts_energy is not None and reac_energy is not None) else None for reac_energy in reactant_energies]
 
-                if success:
-                    reaction_complexes.append((rc, bond_rearran))
-            except Exception as e:
-                continue
-
-        if len(reaction_complexes) == 0:
-            print("No sucesfull reaction complexes made")
-            return [[0, 0, "no rc made"]]
-
-        """ Construct TS initial guess """   
-        ts_guesses = []
-        for rc, bond_rearran in reaction_complexes:
-            mol_1 = Conformer(atoms=rc.atoms[:-1])
-            mol_2 = Conformer(atoms=rc.atoms[-1:], charge=-1)
-            ts_guess = Complex(mol_1, mol_2)
-            translate_rotate_reactant(
-                ts_guess,
-                bond_rearrangement=bond_rearran,
-                shift_factor=1.5 if ts_guess.charge == 0 else 2.5,
-                random_seed=random_seed
-            )
-            ts_guess.mult = 3
-            ts_guesses.append((rc, ts_guess))
-
-        """ TS optimization """
-        barriers = []
-        for (rc, ts_guess) in ts_guesses:
-            try:
-                ts_optimizer.optimise(
-                    species=ts_guess,
-                    method=method,
-                    maxiter=self.max_iter
-                )
-            except Exception as e:
-                barriers.append([0, 0, "TS opt failed"])
-
-            try:
-                ts_guess.calc_hessian(method=method)
-            except Exception as e:
-                if isinstance(e, ade.exceptions.CouldNotGetProperty) and ts_guess.energy is not None:
-                    barriers.append([ts_guess.energy - rc.energy, 0, "Hessian calc failed"])
-
-            if ts_guess.energy is None:
-                barriers.append([0, 0, "TS opt failed"])
-            else:
-                if ts_guess.imaginary_frequencies is not None:
-                    barriers.append([ts_guess.energy - rc.energy, min(ts_guess.imaginary_frequencies), ""])
-                else:
-                    barriers.append([ts_guess.energy - rc.energy, 0, "No imaginary frequencies"])
+    def compute_reaction_energies(self) -> Tuple[List[float]]:
+        reactant_energies = []
+        for conf in self.reactant_conformers:
+            mol = Compound(Chem.MolFromSmiles('C'))
+            mol.charge = -1
+            mol.conformers = [conf]
+            reactant_energies.append(self.method.single_point(mol, 0, None))
         
-        return barriers
+        product_energies = []
+        for conf in self.product_conformers:
+            mol = Compound(Chem.MolFromSmiles('C'))
+            mol.charge = -1
+            mol.conformers = [conf]
+            product_energies.append(self.method.single_point(mol, 0, None))
+
+        return reactant_energies, product_energies

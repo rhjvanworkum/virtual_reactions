@@ -13,8 +13,8 @@ from autode.opt.optimisers import PRFOptimiser
 from autode.wrappers.XTB import XTB
 from autode.values import Distance
 
-from src.reactions.e2_sn2.e2_sn2_reaction import E2Sn2Reaction
-from src.reactions.e2_sn2.template import E2ReactionComplexTemplate, E2Sn2ReactionIndices, Sn2ReactionComplexTemplate
+from src.reactions.e2_sn2.old.e2_sn2_reaction import E2Sn2Reaction
+from src.reactions.e2_sn2.old.template import E2ReactionComplexTemplate, E2Sn2ReactionIndices, Sn2ReactionComplexTemplate
 from src.utils import angle_between
 
 

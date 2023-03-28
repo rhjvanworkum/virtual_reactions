@@ -24,7 +24,8 @@ class Dataset:
 
     def load(
         self,
-        uids: Optional[List[str]] = None
+        uids: Optional[List[str]] = None,
+        mode: Literal["regression", "classification"] = "classification",
     ) -> pd.DataFrame:
         if self.generated:
             df = pd.read_csv(self.csv_file_path)
@@ -90,9 +91,9 @@ class SimulatedDataset(Dataset):
     def generate(
         self,
         source_dataset: Dataset,
-        n_cpus: int
+        n_cpus: int,
     ) -> None:
-        source_data = source_dataset.load()
+        source_data = pd.read_csv(source_dataset.csv_file_path)
         substrates, products, compute_product_only_list, reaction_idxs = self._select_reaction_to_simulate(source_dataset)
 
         substrate_energies_list = {}
@@ -107,7 +108,7 @@ class SimulatedDataset(Dataset):
         for simulation_idx in range(self.n_simulations):
         
             simulation_results = self._simulate_reactions(substrates, products, compute_product_only_list, simulation_idx, n_cpus)
-            assert len(simulation_results) == len(substrates) == len(products) == len(compute_product_only_list)
+            assert len(simulation_results) == len(substrates) == len(compute_product_only_list)
 
             for idx, result in enumerate(simulation_results):
                 # look up results for earlier calculated substrate
@@ -143,52 +144,114 @@ class SimulatedDataset(Dataset):
 
         self.generated = True
 
+    def _load_classification_dataset(
+        self,
+        aggregation_mode: Literal["avg", "low"] = "low",
+        margin: float = 0.0,
+    ) -> List[pd.DataFrame]:
+        dataframe = pd.read_csv(self.csv_file_path)
+        source_dataframe = dataframe[dataframe['simulation_idx'] == 0]
+        
+        dataframes = [source_dataframe]
+        for simulation_idx in range(self.n_simulations):
+            virtual_dataframe = dataframe[dataframe['simulation_idx'] == simulation_idx + 1]
+
+            # filter out reactions that "failed"
+            virtual_dataframe = virtual_dataframe.dropna(subset=['conformer_energies'])
+
+            # drop label column
+            virtual_dataframe = virtual_dataframe.drop(columns=['label'])
+
+            # aggregate across conformers
+            barriers = []
+            for _, row in virtual_dataframe.iterrows():
+                sub_energies, ts_energies = ast.literal_eval(row['conformer_energies'])
+                sub_energies = [e for e in sub_energies if e is not None]
+                ts_energies = [e for e in ts_energies if e is not None]
+
+                if aggregation_mode == 'avg':
+                    barrier = np.mean(np.array(ts_energies)) - np.mean(np.array(sub_energies))
+                elif aggregation_mode == 'low':
+                    barrier = np.min(np.array(ts_energies)) - np.min(np.array(sub_energies))
+                else:
+                    raise ValueError("aggregation_mode {aggregation_mode} doesn't exists")
+                barriers.append(barrier)
+            virtual_dataframe['barrier'] = barriers
+
+            # assing labels based on barriers across substrates
+            labels = []
+            for _, row in virtual_dataframe.iterrows():
+                barrier = row['barrier']
+                other_barriers = virtual_dataframe[virtual_dataframe['substrates'] == row['substrates']]['barrier']
+                label = int((barrier - margin <= other_barriers).all())
+                labels.append(label)
+            virtual_dataframe['label'] = labels
+
+            dataframes.append(virtual_dataframe)
+
+        return dataframes
+
+    def _load_regression_dataset(
+        self,
+        aggregation_mode: Literal["avg", "low"] = "low",
+    ) -> List[pd.DataFrame]:
+        # load dataframe
+        source_dataframe = pd.read_csv(self.csv_file_path)
+
+        dataframes = []
+        for simulation_idx in range(self.n_simulations + 1):
+            dataframe = source_dataframe[source_dataframe['simulation_idx'] == simulation_idx]
+            # filter out reactions that "failed"
+            dataframe = dataframe.dropna(subset=['conformer_energies'])
+            # drop label column
+            if 'label' in dataframe.columns:
+                dataframe = dataframe.drop(columns=['label'])
+            # aggregate across conformers
+            barrier_list = []
+            for _, row in dataframe.iterrows():
+                try:
+                    barriers = ast.literal_eval(row['conformer_energies'])
+                except:
+                    barriers = row['conformer_energies'].replace('[', '').replace(']', '').replace('\n', '')
+                    barriers = barriers.split(' ')
+                    barriers = list(filter(lambda x: len(x) > 2, barriers))
+                    barriers = [float(e) for e in barriers]
+                barriers = [e for e in barriers if e is not None]
+
+                if aggregation_mode == 'avg':
+                    barrier = np.mean(barriers)
+                elif aggregation_mode == 'low':
+                    barrier = np.min(barriers)
+                else:
+                    raise ValueError("aggregation_mode {aggregation_mode} doesn't exists")
+                barrier_list.append(barrier)
+
+            dataframe['label'] = barrier_list
+            dataframe = dataframe[~dataframe['label'].isnull()]
+            dataframe = dataframe[~dataframe['label'].isna()]
+            
+            dataframes.append(dataframe)
+
+        return dataframes
+
     def load(
         self,
         aggregation_mode: Literal["avg", "low"] = "low",
+        mode: Literal["regression", "classification"] = "classification",
         margin: float = 0.0,
         uids: Optional[List[str]] = None
     ) -> pd.DataFrame:
         if self.generated:
-            dataframe = pd.read_csv(self.csv_file_path)
-            source_dataframe = dataframe[dataframe['simulation_idx'] == 0]
-
-            dataframes = [source_dataframe]
-            for simulation_idx in range(self.n_simulations):
-                virtual_dataframe = dataframe[dataframe['simulation_idx'] == simulation_idx + 1]
-
-                # filter out reactions that "failed"
-                virtual_dataframe = virtual_dataframe.dropna(subset=['conformer_energies'])
-
-                # drop label column
-                virtual_dataframe = virtual_dataframe.drop(columns=['label'])
-
-                # aggregate across conformers
-                barriers = []
-                for _, row in virtual_dataframe.iterrows():
-                    sub_energies, ts_energies = ast.literal_eval(row['conformer_energies'])
-                    sub_energies = [e for e in sub_energies if e is not None]
-                    ts_energies = [e for e in ts_energies if e is not None]
-
-                    if aggregation_mode == 'avg':
-                        barrier = np.mean(np.array(ts_energies)) - np.mean(np.array(sub_energies))
-                    elif aggregation_mode == 'low':
-                        barrier = np.min(np.array(ts_energies)) - np.min(np.array(sub_energies))
-                    else:
-                        raise ValueError("aggregation_mode {aggregation_mode} doesn't exists")
-                    barriers.append(barrier)
-                virtual_dataframe['barrier'] = barriers
-
-                # assing labels based on barriers across substrates
-                labels = []
-                for _, row in virtual_dataframe.iterrows():
-                    barrier = row['barrier']
-                    other_barriers = virtual_dataframe[virtual_dataframe['substrates'] == row['substrates']]['barrier']
-                    label = int((barrier - margin <= other_barriers).all())
-                    labels.append(label)
-                virtual_dataframe['label'] = labels
-
-                dataframes.append(virtual_dataframe)
+            # load simulated dataframes
+            if mode == "classification":
+                dataframes = self._load_classification_dataset(
+                    aggregation_mode,
+                    margin
+                )
+            elif mode == "regression":
+                dataframes = self._load_regression_dataset(
+                    aggregation_mode
+                )
 
             # drop conformer energy column & duplicates
             dataframe = pd.concat(dataframes)

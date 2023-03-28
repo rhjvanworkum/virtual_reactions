@@ -70,11 +70,11 @@ def write_xyz_file(atoms: List[Atom], filename: str):
     for atom in atoms:
         f.write(atom.atomic_symbol)
         for cartesian in ['x', 'y', 'z']:
-            if getattr(atom.coord, cartesian) < 0:
+            if getattr(atom, cartesian) < 0:
                 f.write('         ')
             else:
                 f.write('          ')
-            f.write("%.5f" % getattr(atom.coord, cartesian))
+            f.write("%.5f" % getattr(atom, cartesian))
         f.write('\n')
     
     f.write('\n')

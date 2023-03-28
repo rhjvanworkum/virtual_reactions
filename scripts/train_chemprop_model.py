@@ -4,7 +4,7 @@ from sklearn.metrics import roc_auc_score
 from random import randint
 import numpy as np
 
-from src.reactions.eas.xtb_eas_dataset import XtbSimulatedEasDataset
+from src.reactions.eas.eas_dataset import XtbSimulatedEasDataset
 from src.dataset import Dataset
 from src.split import HeteroCycleSplit
 

@@ -6,8 +6,8 @@ from typing import List
 import pandas as pd
 
 from src.compound import Conformation
-from src.reactions.e2_sn2.e2_sn2_reaction import E2Sn2Reaction
-from src.reactions.e2_sn2.template import E2ReactionTemplate
+from src.reactions.e2_sn2.old.e2_sn2_reaction import E2Sn2Reaction
+from src.reactions.e2_sn2.old.template import E2ReactionTemplate
 from src.utils import read_xyz_file
 
 BASE_DIR = '/home/rhjvanworkum/virtual_reactions/calculations/'
