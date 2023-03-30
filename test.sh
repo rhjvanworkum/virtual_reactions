@@ -13,7 +13,9 @@ source env.sh
 
 export OMP_NUM_THREADS=4
 
-python tests/eas/test_eas_pyscf.py
+# python scripts/datasets/generation/generate_xtb_sn2_dataset.py
+python scripts/datasets/generation/generate_ff_eas_dataset.py
+
 
 # python test_bo.py
 # python run_regression.py

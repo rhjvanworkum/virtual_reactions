@@ -1,6 +1,6 @@
 import os
 from src.dataset import Dataset
-from src.reactions.eas.ff_eas_dataset import FFSimulatedEasDataset
+from src.reactions.eas.eas_dataset import SingleFFSimulatedEasDataset, FFSimulatedEasDataset
 
 BASE_DIR = '/home/rhjvanworkum/virtual_reactions/calculations/'
 BASE_PATH = '/home/rhjvanworkum/virtual_reactions/'
@@ -16,8 +16,14 @@ source_dataset = Dataset(
     csv_file_path="eas_dataset.csv"
 )
 
-dataset = FFSimulatedEasDataset(
-    csv_file_path="ff_simulated_eas.csv"
+# dataset = FFSimulatedEasDataset(
+#     csv_file_path="ff_simulated_eas.csv"
+# )
+
+# dataset.generate(source_dataset, n_cpus=N_CPUS)
+
+dataset = SingleFFSimulatedEasDataset(
+    csv_file_path="single_ff_simulated_eas.csv"
 )
 
 dataset.generate(source_dataset, n_cpus=N_CPUS)

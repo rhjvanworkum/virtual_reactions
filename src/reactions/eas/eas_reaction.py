@@ -4,7 +4,7 @@ from rdkit.Chem import AllChem
 
 from src.methods.XTB import xtb
 from src.compound import Compound, Conformation
-from src.reactions.eas.eas_methods import EASMethod
+from src.methods.methods import Method
 
 class EASReaction:
     rxns = [
@@ -16,7 +16,7 @@ class EASReaction:
         self,
         substrate_smiles: str,
         product_smiles: str,
-        method: EASMethod,
+        method: Method,
         has_openmm_compatability: bool = False,
         compute_product_only: bool = False
     ) -> None:

@@ -163,6 +163,16 @@ class PyscfMethod(Method):
         )
         return energy
 
+class OrcaMethod(Method):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        
+
+    def single_point(self, molecule: Compound, conformer_idx: int, solvent: str = 'Methanol') -> float:
+        return super().single_point(molecule, conformer_idx, solvent)
+
 
 class ForceFieldMethod(Method):
     def __init__(
@@ -179,7 +189,29 @@ class ForceFieldMethod(Method):
         conformer_idx: int, 
         solvent: str = 'Methanol'
     ) -> float:
-        return None
+        system = self.force_field.create_openmm_system(
+            molecule.mol_topology,
+            charge_from_molecules=[molecule.ff_mol],
+        )
+
+        platform = Platform.getPlatformByName("CPU")
+        integrator = LangevinIntegrator(
+            300 * unit.kelvin,
+            1 / unit.picosecond,
+            0.002 * unit.picoseconds,
+        )
+        simulation = app.Simulation(
+            molecule.mol_topology.to_openmm(), system, integrator, platform=platform
+        )
+
+        simulation.context.setPositions(molecule.openmm_conformers[conformer_idx])
+        minimized_state = simulation.context.getState(
+            getPositions=False, getEnergy=True
+        )
+        energy = minimized_state.getPotentialEnergy().value_in_unit(
+            unit.kilocalories_per_mole
+        )
+        return energy
 
     def optimization(
         self,

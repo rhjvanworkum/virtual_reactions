@@ -5,8 +5,9 @@ import numpy as np
 import pandas as pd
 from typing import Any, List, Tuple, Union
 
-from src.methods.methods import NwchemMethod, XtbMethod
+from src.methods.methods import NwchemMethod, PyscfMethod, XtbMethod
 from src.dataset import Dataset, SimulatedDataset
+from src.reactions.e2_sn2.e2_sn2_methods import e2_sn2_ff_methods
 from src.reactions.e2_sn2.e2_sn2_reaction import E2Sn2Reaction
 from src.utils import Atom
 
@@ -94,11 +95,12 @@ class SimulatedE2Sn2Dataset(SimulatedDataset):
 
     def __init__(
         self, 
-        csv_file_path: str, 
+        csv_file_path: str,
+        n_simulations: int = 1 
     ) -> None:
         super().__init__(
             csv_file_path=csv_file_path, 
-            n_simulations=1
+            n_simulations=n_simulations
         )
 
     def _select_reaction_to_simulate(
@@ -200,17 +202,51 @@ class XtbSimulatedE2Sn2Dataset(SimulatedE2Sn2Dataset):
             dataset = json.load(json_file)
 
         arguments = [{
+            'reactant_smiles': substrate,
             'reactant_conformers': [list_to_atom(geom) for geom in dataset[reaction_label]['rc_conformers']],
             'ts': list_to_atom(dataset[reaction_label]['ts']),
             'product_conformers': [],
-            'method': XtbMethod()
-        } for reaction_label in products]
+            'method': XtbMethod(),
+            'has_openmm_compatability': False
+        } for substrate, reaction_label in zip(substrates, products)]
 
         with ProcessPoolExecutor(max_workers=n_cpus) as executor:
             results = list(tqdm(executor.map(compute_e2_sn2_reaction_barriers, arguments), total=len(arguments)))
         return results
     
-class DFTSimulatedE2Sn2Dataset(SimulatedE2Sn2Dataset):
+class FFSimulatedE2Sn2Dataset(SimulatedE2Sn2Dataset):
+
+    def __init__(self, csv_file_path: str, n_simulations: int) -> None:
+        super().__init__(
+            csv_file_path=csv_file_path,
+            n_simulations=n_simulations
+        )
+
+    def _simulate_reactions(
+        self,
+        substrates: Union[str, List[str]],
+        products: Union[str, List[str]],
+        compute_product_only_list: Union[bool, List[bool]],
+        simulation_idx: int,
+        n_cpus: int
+    ) -> List[Any]:
+        with open(self.JSON_FILE) as json_file:
+            dataset = json.load(json_file)
+
+        arguments = [{
+            'reactant_smiles': substrate,
+            'reactant_conformers': [list_to_atom(geom) for geom in dataset[reaction_label]['rc_conformers']],
+            'ts': list_to_atom(dataset[reaction_label]['ts']),
+            'product_conformers': [],
+            'method': e2_sn2_ff_methods[simulation_idx],
+            'has_openmm_compatability': True
+        } for substrate, reaction_label in zip(substrates, products)]
+
+        with ProcessPoolExecutor(max_workers=n_cpus) as executor:
+            results = list(tqdm(executor.map(compute_e2_sn2_reaction_barriers, arguments), total=len(arguments)))
+        return results
+
+class NwchemSimulatedE2Sn2Dataset(SimulatedE2Sn2Dataset):
 
     def __init__(self, csv_file_path: str) -> None:
         super().__init__(csv_file_path)
@@ -229,6 +265,7 @@ class DFTSimulatedE2Sn2Dataset(SimulatedE2Sn2Dataset):
             dataset = json.load(json_file)
 
         arguments = [{
+            'reactant_smiles': substrate,
             'reactant_conformers': [list_to_atom(geom) for geom in dataset[reaction_label]['rc_conformers']],
             'ts': list_to_atom(dataset[reaction_label]['ts']),
             'product_conformers': [],
@@ -236,10 +273,45 @@ class DFTSimulatedE2Sn2Dataset(SimulatedE2Sn2Dataset):
                 functional='B3LYP',
                 basis_set='6-311g',
                 n_cores=2
-            )
-        } for reaction_label in products]
+            ),
+            'has_openmm_compatability': True
+        } for substrate, reaction_label in zip(substrates, products)]
 
         with ProcessPoolExecutor(max_workers=n_cpus) as executor:
             results = list(tqdm(executor.map(compute_e2_sn2_reaction_barriers, arguments), total=len(arguments)))
         return results
     
+class PyscfSimulatedE2Sn2Dataset(SimulatedE2Sn2Dataset):
+
+    def __init__(self, csv_file_path: str) -> None:
+        super().__init__(csv_file_path)
+
+    def _simulate_reactions(
+        self,
+        substrates: Union[str, List[str]],
+        products: Union[str, List[str]],
+        compute_product_only_list: Union[bool, List[bool]],
+        simulation_idx: int,
+        n_cpus: int
+    ) -> List[Any]:
+        assert simulation_idx == 0
+        
+        with open(self.JSON_FILE) as json_file:
+            dataset = json.load(json_file)
+
+        arguments = [{
+            'reactant_smiles': substrate,
+            'reactant_conformers': [list_to_atom(geom) for geom in dataset[reaction_label]['rc_conformers']],
+            'ts': list_to_atom(dataset[reaction_label]['ts']),
+            'product_conformers': [],
+            'method': PyscfMethod(
+                functional='B3LYP',
+                basis_set='6-311g',
+                n_cores=2
+            ),
+            'has_openmm_compatability': True
+        } for substrate, reaction_label in zip(substrates, products)]
+
+        with ProcessPoolExecutor(max_workers=n_cpus) as executor:
+            results = list(tqdm(executor.map(compute_e2_sn2_reaction_barriers, arguments), total=len(arguments)))
+        return results
