@@ -16,6 +16,8 @@ from src.methods.pyscf import pyscf
 from src.methods.XTB import xtb
 from src.compound import Compound, Conformation
 
+from huxel.main import compute_energy_of_rdkit_mol
+
 class Method:
     def __init__(self) -> None:
         pass
@@ -35,6 +37,28 @@ class Method:
         solvent: str = 'Methanol'
     ) -> float:
         raise NotImplementedError
+
+
+class HuckelMethod(Method):
+    def __init__(self) -> None:
+        pass
+
+    def single_point(
+        self, 
+        molecule: Compound, 
+        conformer_idx: int, 
+        solvent: str = 'Methanol'
+    ) -> float:
+        energy, _ = compute_energy_of_rdkit_mol(molecule.rdkit_mol, conformer_idx)
+        return energy
+    
+    def optimization(
+        self,
+        molecule: Compound,
+        conformer_idx: int,
+        solvent: str = 'Methanol'
+    ) -> float:
+        raise NotImplementedError("Not implemented yet")
 
 
 class XtbMethod(Method):
@@ -72,6 +96,7 @@ class XtbMethod(Method):
             xcontrol_file=None
         )
         return energy
+
 
 class NwchemMethod(Method):
     def __init__(
@@ -117,6 +142,7 @@ class NwchemMethod(Method):
             n_cores=self.n_cores
         )
         return energy
+
 
 class PyscfMethod(Method):
     def __init__(
