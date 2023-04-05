@@ -10,7 +10,9 @@ import openff.toolkit.typing.engines.smirnoff.parameters as offtk_parameters
 from openff.toolkit.typing.engines.smirnoff import ForceField
 
 import os
+import numpy as np
 from typing import List, Optional
+
 from src.methods.NWCHEM import nwchem
 from src.methods.pyscf import pyscf
 from src.methods.XTB import xtb
@@ -40,8 +42,8 @@ class Method:
 
 
 class HuckelMethod(Method):
-    def __init__(self) -> None:
-        pass
+    def __init__(self, parameter_file = None) -> None:
+        self.parameter_file = parameter_file
 
     def single_point(
         self, 
@@ -49,8 +51,7 @@ class HuckelMethod(Method):
         conformer_idx: int, 
         solvent: str = 'Methanol'
     ) -> float:
-        energy, _ = compute_energy_of_rdkit_mol(molecule.rdkit_mol, conformer_idx)
-        return energy
+        return np.asarray(compute_energy_of_rdkit_mol(molecule, conformer_idx, self.parameter_file))
     
     def optimization(
         self,
