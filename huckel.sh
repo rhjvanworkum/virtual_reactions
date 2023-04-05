@@ -13,7 +13,9 @@ source env.sh
 
 export OMP_NUM_THREADS=4
 
-python scripts/datasets/generation/generate_xtb_sn2_dataset.py
+python scripts/datasets/generate_huckel_parameters.py
+
+# python scripts/datasets/generation/generate_xtb_sn2_dataset.py
 # python scripts/datasets/generation/generate_ff_eas_dataset.py
 
 

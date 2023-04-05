@@ -9,7 +9,7 @@ except ImportError:
 import openff.toolkit.typing.engines.smirnoff.parameters as offtk_parameters
 from openff.toolkit.typing.engines.smirnoff import ForceField
 
-from src.methods.methods import ForceFieldMethod
+from src.methods.methods import ForceFieldMethod, HuckelMethod
 
 from typing import List
 
@@ -127,3 +127,10 @@ def construct_e2_sn2_force_field_parametrizations() -> List[ForceField]:
     return force_fields
 
 e2_sn2_ff_methods = [ForceFieldMethod(forcefield) for forcefield in construct_e2_sn2_force_field_parametrizations()]
+
+e2_sn2_huckel_methods = [
+    HuckelMethod('H_test'), 
+    HuckelMethod('F_test'),
+    HuckelMethod('Cl_test'),
+    HuckelMethod('Br_test'),
+]
