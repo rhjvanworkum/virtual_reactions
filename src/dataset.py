@@ -221,7 +221,10 @@ class SimulatedDataset(Dataset):
                 if aggregation_mode == 'avg':
                     barrier = np.mean(barriers)
                 elif aggregation_mode == 'low':
-                    barrier = np.min(barriers)
+                    if len(barriers) > 0:
+                        barrier = np.min(barriers)
+                    else:
+                        barrier = None
                 else:
                     raise ValueError("aggregation_mode {aggregation_mode} doesn't exists")
                 barrier_list.append(barrier)

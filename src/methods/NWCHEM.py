@@ -90,9 +90,9 @@ def nwchem(
                 print(f"task dft", file=inp_file)
 
         params = [
-            "mpirun",
-            "-n",
-            str(n_cores),
+            # "mpirun",
+            # "-n",
+            # str(n_cores),
             "nwchem",
             'test.in',
         ]

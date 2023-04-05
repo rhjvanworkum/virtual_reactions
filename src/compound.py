@@ -88,7 +88,7 @@ class Compound:
             smiles = Chem.MolToSmiles(Chem.RemoveHs(self.rdkit_mol))
             self.ff_mol = EditedRDKitToolkitWrapper().from_smiles(smiles, allow_undefined_stereo=True)
             self.ff_mol.partial_charges = _compute_rdkit_partial_charges(
-                self.rdkit_mol
+                Chem.AddHs(self.rdkit_mol)
             )
             self.openmm_conformers = []
             self.mol_topology = self.ff_mol.to_topology()

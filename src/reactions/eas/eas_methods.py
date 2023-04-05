@@ -71,4 +71,6 @@ def construct_eas_force_field_parametrizations() -> List[ForceField]:
 
 eas_xtb_method = XtbMethod()
 
+eas_ff = ForceFieldMethod(ForceField("openff-2.0.0.offxml"))
+
 eas_ff_methods = [ForceFieldMethod(forcefield) for forcefield in construct_eas_force_field_parametrizations()]

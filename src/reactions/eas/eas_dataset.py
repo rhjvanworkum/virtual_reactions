@@ -4,7 +4,7 @@ from typing import Any, List, Tuple, Union
 from tqdm import tqdm
 
 from src.reactions.eas.eas_reaction import EASReaction
-from src.reactions.eas.eas_methods import eas_xtb_method, eas_ff_methods, EASDFT
+from src.reactions.eas.eas_methods import eas_xtb_method, eas_ff_methods, eas_ff
 
 from src.dataset import Dataset, SimulatedDataset
 
@@ -101,6 +101,36 @@ class XtbSimulatedEasDataset(SimulatedEASDataset):
             results = list(tqdm(executor.map(compute_eas_conformer_energies, arguments), total=len(arguments)))
         return results
 
+class SingleFFSimulatedEasDataset(SimulatedEASDataset):
+
+    def __init__(
+        self,
+        csv_file_path: str
+    ) -> None:
+        super().__init__(
+            csv_file_path=csv_file_path,
+            n_simulations=1
+        )
+
+    def _simulate_reactions(
+        self,
+        substrates: Union[str, List[str]],
+        products: Union[str, List[str]],
+        compute_product_only_list: Union[bool, List[bool]],
+        simulation_idx: int,
+        n_cpus: int
+    ) -> List[Any]:
+        arguments = [{
+            'substrate_smiles': substrate.split('.')[0], 
+            'product_smiles': product,
+            'method': eas_ff,
+            'has_openmm_compatability': True,
+            'compute_product_only': compute_product_only
+
+        } for substrate, product, compute_product_only in zip(substrates, products, compute_product_only_list)]
+        with ProcessPoolExecutor(max_workers=n_cpus) as executor:
+            results = list(tqdm(executor.map(compute_eas_conformer_energies, arguments), total=len(arguments)))
+        return results
 
 class FFSimulatedEasDataset(SimulatedEASDataset):
 
@@ -121,7 +151,6 @@ class FFSimulatedEasDataset(SimulatedEASDataset):
         simulation_idx: int,
         n_cpus: int
     ) -> List[Any]:
-        assert simulation_idx == 0
         arguments = [{
             'substrate_smiles': substrate.split('.')[0], 
             'product_smiles': product,
@@ -134,37 +163,37 @@ class FFSimulatedEasDataset(SimulatedEASDataset):
             results = list(tqdm(executor.map(compute_eas_conformer_energies, arguments), total=len(arguments)))
         return results
 
-class DFTSimulatedEasDataset(SimulatedEASDataset):
+# class DFTSimulatedEasDataset(SimulatedEASDataset):
 
-    def __init__(
-        self,
-        csv_file_path: str
-    ) -> None:
-        super().__init__(
-            csv_file_path=csv_file_path,
-            n_simulations=1
-        )
+#     def __init__(
+#         self,
+#         csv_file_path: str
+#     ) -> None:
+#         super().__init__(
+#             csv_file_path=csv_file_path,
+#             n_simulations=1
+#         )
 
-    def _simulate_reactions(
-        self,
-        substrates: Union[str, List[str]],
-        products: Union[str, List[str]],
-        compute_product_only_list: Union[bool, List[bool]],
-        simulation_idx: int,
-        n_cpus: int
-    ) -> List[Any]:
-        assert simulation_idx == 0
-        arguments = [{
-            'substrate_smiles': substrate.split('.')[0], 
-            'product_smiles': product,
-            'method':  EASDFT(
-                functional='B3LYP',
-                basis_set='6-311g'
-            ),
-            'has_openmm_compatability': False,
-            'compute_product_only': compute_product_only
+#     def _simulate_reactions(
+#         self,
+#         substrates: Union[str, List[str]],
+#         products: Union[str, List[str]],
+#         compute_product_only_list: Union[bool, List[bool]],
+#         simulation_idx: int,
+#         n_cpus: int
+#     ) -> List[Any]:
+#         assert simulation_idx == 0
+#         arguments = [{
+#             'substrate_smiles': substrate.split('.')[0], 
+#             'product_smiles': product,
+#             'method':  EASDFT(
+#                 functional='B3LYP',
+#                 basis_set='6-311g'
+#             ),
+#             'has_openmm_compatability': False,
+#             'compute_product_only': compute_product_only
 
-        } for substrate, product, compute_product_only in zip(substrates, products, compute_product_only_list)]
-        with ProcessPoolExecutor(max_workers=n_cpus) as executor:
-            results = list(tqdm(executor.map(compute_eas_conformer_energies, arguments), total=len(arguments)))
-        return results
+#         } for substrate, product, compute_product_only in zip(substrates, products, compute_product_only_list)]
+#         with ProcessPoolExecutor(max_workers=n_cpus) as executor:
+#             results = list(tqdm(executor.map(compute_eas_conformer_energies, arguments), total=len(arguments)))
+#         return results
