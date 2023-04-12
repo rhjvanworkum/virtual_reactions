@@ -6,6 +6,7 @@ from rdkit import Chem
 import numpy as np
 import json
 import pickle
+import functools
 import sys
 
 import warnings
@@ -84,10 +85,13 @@ def prepare_dataset(
     return batches
 
 if __name__ == "__main__":
-    batches = prepare_dataset('Br-', 16)
-    save_name = 'Br_test_2'
+    jax.config.update("jax_enable_x64", True)
+    jax.config.update('jax_disable_jit', False)
 
-    sys.stdout = open("stdout4.txt", "w", buffering=1)
+    batches = prepare_dataset('H+', 8)[:1]
+    save_name = 'test'
+
+    sys.stdout = open("stdout5.txt", "w", buffering=1)
 
     lr = 1e-2
     n_epochs = 150
@@ -105,15 +109,17 @@ if __name__ == "__main__":
             pred_barriers.append(
                 f_energy(params, ts, f_beta) - f_energy(params, reac, f_beta)
             )
-        return jnp.mean((jnp.array(pred_barriers) - jnp.array(ref_barriers))**2)
+        return jnp.mean((jnp.array(ref_barriers) - jnp.array(pred_barriers))**2)
 
     grad_fn = jax.value_and_grad(loss_fn, argnums=(0,), has_aux=False)
 
     params_init = get_default_params()
+    params_init = {'h_x': params_init['h_x'], 'h_xy': params_init['h_xy'], 'r_xy': params_init['r_xy']}
     optimizer = optax.adamw(learning_rate=lr)
     opt_state = optimizer.init(params_init)
     params = jax.tree_map(lambda x: jax.lax.convert_element_type(x, jnp.float32), params_init)
 
+    @functools.partial(jax.jit, static_argnums=(2))
     def train_step(params, optimizer_state, batch):
         loss, grads = grad_fn(params, batch)
         updates, opt_state = optimizer.update(grads[0], optimizer_state, params)
@@ -131,6 +137,6 @@ if __name__ == "__main__":
         time_epoch = time.time() - start_time_epoch
         print(epoch, loss_tr_mean, time_epoch)
 
-    with open(save_name, 'wb') as file:
-        pickle.dump(params, file)
+    # with open(save_name, 'wb') as file:
+    #     pickle.dump(params, file)
     
