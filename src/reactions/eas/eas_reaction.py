@@ -16,10 +16,12 @@ class EASReaction:
         self,
         substrate_smiles: str,
         product_smiles: str,
+        solvent: str,
         method: Method,
         has_openmm_compatability: bool = False,
         compute_product_only: bool = False
     ) -> None:
+        self.solvent = solvent
         self.method = method
         self.has_openmm_compatability = has_openmm_compatability
         self.compute_product_only = compute_product_only
@@ -60,7 +62,7 @@ class EASReaction:
     ) -> float:
         if molecule.conformers[conformer_idx] is not None:
             energy = self.method.optimization(
-                molecule, conformer_idx, 'Methanol'
+                molecule, conformer_idx, self.solvent
             )
         else:
             energy = None

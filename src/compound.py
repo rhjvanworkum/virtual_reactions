@@ -143,7 +143,9 @@ class Compound:
             useBasicKnowledge=True, 
             ETversion=2
         )
-        AllChem.UFFOptimizeMolecule(self.rdkit_mol)
+
+        if self.rdkit_mol.GetNumConformers() > 0:
+            AllChem.UFFOptimizeMolecule(self.rdkit_mol)
 
         self.conformers = []
         for idx in range(self.rdkit_mol.GetNumConformers()):
@@ -153,7 +155,6 @@ class Compound:
                     self.rdkit_mol.GetConformer(idx)
                 )
             )
-
         if self.has_openmm_compatability:
             self._set_openmm_conformers()
 
@@ -181,13 +182,14 @@ class Compound:
                 energies.append(energy)
                 geometries.append(geometry)
 
-        energies = np.array(energies)
-        rel_energies = energies - np.min(energies) #covert to relative energies
-        below_cutoff = (rel_energies <= conf_cutoff).sum() #get number of conf below cutoff
-        conf_tuble = list(zip(geometries, rel_energies)) #make a tuble
-        conf_tuble = sorted(conf_tuble, key=itemgetter(1))[:below_cutoff] #get only the best conf below cutoff
-        best_conformers = [item[0] for item in conf_tuble]
+        if len(energies) > 0:
+            energies = np.array(energies)
+            rel_energies = energies - np.min(energies) #covert to relative energies
+            below_cutoff = (rel_energies <= conf_cutoff).sum() #get number of conf below cutoff
+            conf_tuble = list(zip(geometries, rel_energies)) #make a tuble
+            conf_tuble = sorted(conf_tuble, key=itemgetter(1))[:below_cutoff] #get only the best conf below cutoff
+            best_conformers = [item[0] for item in conf_tuble]
 
-        self.conformers = best_conformers
-        if self.has_openmm_compatability:
-            self._set_openmm_conformers()
+            self.conformers = best_conformers
+            if self.has_openmm_compatability:
+                self._set_openmm_conformers()

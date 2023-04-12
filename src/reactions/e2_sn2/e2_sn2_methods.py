@@ -129,8 +129,8 @@ def construct_e2_sn2_force_field_parametrizations() -> List[ForceField]:
 e2_sn2_ff_methods = [ForceFieldMethod(forcefield) for forcefield in construct_e2_sn2_force_field_parametrizations()]
 
 e2_sn2_huckel_methods = [
-    HuckelMethod('H_test'), 
-    HuckelMethod('F_test'),
-    HuckelMethod('Cl_test'),
-    HuckelMethod('Br_test'),
+    HuckelMethod('H_test_2'), 
+    HuckelMethod('F_test_2'),
+    HuckelMethod('Cl_test_2'),
+    HuckelMethod('Br_test_2'),
 ]

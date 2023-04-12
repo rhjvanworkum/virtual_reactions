@@ -11,10 +11,12 @@ class DAReaction:
         self,
         substrate_smiles: str,
         product_smiles: str,
+        solvent: str,
         method: Method,
         has_openmm_compatability: bool = False,
         compute_product_only: bool = False
     ) -> None:
+        self.solvent = solvent
         self.method = method
         self.has_openmm_compatability = has_openmm_compatability
         self.compute_product_only = compute_product_only
@@ -48,7 +50,9 @@ class DAReaction:
     ) -> float:
         if molecule.conformers[conformer_idx] is not None:
             energy = self.method.optimization(
-                molecule, conformer_idx, None
+                molecule=molecule, 
+                conformer_idx=conformer_idx, 
+                solvent=self.solvent
             )
         else:
             energy = None
@@ -67,9 +71,15 @@ class DAReaction:
         if not self.compute_product_only:
             for substrate_idx in range(2):
                 for sub_conf_idx in range(len(self.substrates[substrate_idx].conformers)):
-                    energies[substrate_idx].append(self.compute_energy(self.substrates[substrate_idx], sub_conf_idx))
-        
+                    try:
+                        energies[substrate_idx].append(self.compute_energy(self.substrates[substrate_idx], sub_conf_idx))
+                    except:
+                        continue
+
         for ts_conf_idx in range(len(self.product.conformers)):
-            energies[-1].append(self.compute_energy(self.product, ts_conf_idx))
+            try:
+                energies[-1].append(self.compute_energy(self.product, ts_conf_idx))
+            except:
+                continue
 
         return energies
