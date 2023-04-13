@@ -23,19 +23,21 @@ def train_and_evaluate_chemprop_model(
     dataset.generate_chemprop_dataset()
 
     # construct evaluation metrics
-    tot_train_auc, tot_val_auc, tot_test_auc = [], [], []
-    train_auc, val_auc, test_auc = [[] for _ in range(max_simulation_idx)], \
-                                   [[] for _ in range(max_simulation_idx)], \
-                                   [[] for _ in range(max_simulation_idx)]
+    tot_train_auc, tot_val_auc, tot_ood_test_auc, tot_iid_test_auc, tot_virtual_test_auc = [], [], [], [], []
+    train_auc, val_auc, ood_test_auc, iid_test_auc, virtual_test_auc =  [[] for _ in range(max_simulation_idx)], \
+                                                                        [[] for _ in range(max_simulation_idx)], \
+                                                                        [[] for _ in range(max_simulation_idx)], \
+                                                                        [[] for _ in range(max_simulation_idx)], \
+                                                                        [[] for _ in range(max_simulation_idx)]
 
     for _ in range(n_replications):
         random_seed = randint(1, 1000)
 
         # 1. Generate splits
-        train_uids, val_uids, test_uids = dataset_split.generate_splits(source_data, random_seed)
+        train_uids, val_uids, ood_test_uids, iid_test_uids, virtual_test_uids = dataset_split.generate_splits(source_data, random_seed)
         for uids, data_file_path in zip(
-            [train_uids, val_uids, test_uids],
-            [os.path.join(base_dir, f'{split}_data.csv') for split in ['train', 'val', 'test']]
+            [train_uids, val_uids, ood_test_uids, iid_test_uids, virtual_test_uids],
+            [os.path.join(base_dir, f'{split}_data.csv') for split in ['train', 'val', 'ood_test', 'iid_test', 'virtual_test']]
         ):
             split_data = dataset.load_chemprop_dataset(uids=uids)
             split_data.to_csv(data_file_path)
@@ -47,7 +49,7 @@ def train_and_evaluate_chemprop_model(
             --smiles_columns smiles --target_columns label \
             --data_path {os.path.join(base_dir, 'train_data.csv')} \
             --separate_val_path {os.path.join(base_dir, 'val_data.csv')} \
-            --separate_test_path {os.path.join(base_dir, 'test_data.csv')} \
+            --separate_test_path {os.path.join(base_dir, 'ood_test_data.csv')} \
             --dataset_type classification \
             --pytorch_seed {random_seed} \
             --save_dir {base_dir} " \
@@ -56,9 +58,9 @@ def train_and_evaluate_chemprop_model(
 
         # 3. Evaluate model
         for split, tot_auc_list, auc_list in zip(
-            ['train', 'val', 'test'],
-            [tot_train_auc, tot_val_auc, tot_test_auc],
-            [train_auc, val_auc, test_auc]
+            ['train', 'val', 'ood_test', 'iid_test', 'virtual_test'],
+            [tot_train_auc, tot_val_auc, tot_ood_test_auc, tot_iid_test_auc, tot_virtual_test_auc],
+            [train_auc, val_auc, ood_test_auc, iid_test_auc, virtual_test_auc]
         ):
             os.system(
                 f"chemprop_predict \
@@ -68,29 +70,30 @@ def train_and_evaluate_chemprop_model(
                 --preds_path {os.path.join(base_dir, f'{split}_data_preds.csv')}"
             )
             true_df = pd.read_csv(os.path.join(base_dir, f'{split}_data.csv'))
-            pred_df = pd.read_csv(os.path.join(base_dir, f'{split}_data_preds.csv'))
+            if os.path.exists(os.path.join(base_dir, f'{split}_data_preds.csv')):
+                pred_df = pd.read_csv(os.path.join(base_dir, f'{split}_data_preds.csv'))
 
-            # total roc auc
-            tot_auc_list.append(
-                roc_auc_score(
-                    true_df['label'].values, 
-                    pred_df['label'].values
-                )
-            )
-
-            # virtual reaction specific roc auc
-            for simulation_idx in range(max_simulation_idx):
-                labels = true_df[true_df['simulation_idx'] == simulation_idx]['label'].values
-                preds = pred_df[pred_df['simulation_idx'] == simulation_idx]['label'].values
-                if len(labels) > 0 and len(preds) > 0:
-                    auc_list[simulation_idx].append(
-                        roc_auc_score(
-                            labels,
-                            preds
-                        )
+                # total roc auc
+                tot_auc_list.append(
+                    roc_auc_score(
+                        true_df['label'].values, 
+                        pred_df['label'].values
                     )
-                else:
-                    auc_list[simulation_idx].append(0)
+                )
+
+                # virtual reaction specific roc auc
+                for simulation_idx in range(max_simulation_idx):
+                    labels = true_df[true_df['simulation_idx'] == simulation_idx]['label'].values
+                    preds = pred_df[pred_df['simulation_idx'] == simulation_idx]['label'].values
+                    if len(labels) > 0 and len(preds) > 0:
+                        auc_list[simulation_idx].append(
+                            roc_auc_score(
+                                labels,
+                                preds
+                            )
+                        )
+                    else:
+                        auc_list[simulation_idx].append(0)
 
     # evaluate simulation
     simulation_auc = [1.0]
@@ -108,35 +111,48 @@ def train_and_evaluate_chemprop_model(
 
     # save raw metrics and log important ones
     simulation_auc = np.array(simulation_auc)
-    tot_train_auc, tot_val_auc, tot_test_auc = np.array(tot_train_auc), np.array(tot_val_auc), np.array(tot_test_auc)
-    train_auc, val_auc, test_auc = np.array(train_auc), np.array(val_auc), np.array(test_auc)
+    tot_train_auc, tot_val_auc, tot_ood_test_auc, tot_iid_test_auc, tot_virtual_test_auc = np.array(tot_train_auc), \
+                                                                                           np.array(tot_val_auc), \
+                                                                                           np.array(tot_ood_test_auc), \
+                                                                                           np.array(tot_iid_test_auc), \
+                                                                                           np.array(tot_virtual_test_auc)
+    train_auc, val_auc, ood_test_auc, iid_test_auc, virtual_test_auc = np.array(train_auc), \
+                                                                       np.array(val_auc), \
+                                                                       np.array(ood_test_auc), \
+                                                                       np.array(iid_test_auc), \
+                                                                       np.array(virtual_test_auc)
 
     np.save(os.path.join(base_dir, 'simulation_auc.npy'), simulation_auc)
-    np.savez(os.path.join(base_dir, 'tot_auc.npz'), tot_train_auc=tot_train_auc, tot_val_auc=tot_val_auc, tot_test_auc=tot_test_auc)
-    np.savez(os.path.join(base_dir, 'auc.npz'), train_auc=train_auc, val_auc=val_auc, test_auc=test_auc)
+    np.savez(os.path.join(base_dir, 'tot_auc.npz'), tot_train_auc=tot_train_auc, tot_val_auc=tot_val_auc, tot_test_auc=tot_ood_test_auc)
+    np.savez(os.path.join(base_dir, 'auc.npz'), train_auc=train_auc, val_auc=val_auc, test_auc=ood_test_auc)
 
     print(f'Simulation AUROC:')
-    print(f'Sim idx {", ".join([str(i) for i in range(max_simulation_idx)])}')
-    print(f'AUROC: {", ".join([str(round(i, 3)) for i in simulation_auc])} \n\n')
+    print(f'Sim idx: {", ".join([str(i) for i in range(max_simulation_idx)])}')
+    print(f'AUROC  : {", ".join([str(round(i, 3)) for i in simulation_auc])} \n\n')
 
     print(f'Mean Model AUROC:')
-    print(f'Split: train, val, test')
-    print(f'AUROC: {round(np.mean(tot_train_auc), 3)} ({", ".join([str(round(np.mean(train_auc[i]), 3)) for i in range(max_simulation_idx)])}), \
-                   {round(np.mean(tot_val_auc), 3)} ({", ".join([str(round(np.mean(val_auc[i]), 3)) for i in range(max_simulation_idx)])}), \
-                   {round(np.mean(tot_test_auc), 3)} ({", ".join([str(round(np.mean(test_auc[i]), 3)) for i in range(max_simulation_idx)])}), \n\n')
-
-    
+    print(f'Train       : {round(np.mean(tot_train_auc), 3)} ({", ".join([str(round(np.mean(train_auc[i]), 3)) for i in range(max_simulation_idx)])})')
+    print(f'Val         : {round(np.mean(tot_val_auc), 3)} ({", ".join([str(round(np.mean(val_auc[i]), 3)) for i in range(max_simulation_idx)])})')
+    print(f'OOD Test    : {round(np.mean(tot_ood_test_auc), 3)} ({", ".join([str(round(np.mean(ood_test_auc[i]), 3)) for i in range(max_simulation_idx)])})')
+    print(f'IID Test    : {round(np.mean(tot_iid_test_auc), 3)} ({", ".join([str(round(np.mean(iid_test_auc[i]), 3)) for i in range(max_simulation_idx)])})')
+    print(f'Virtual Test: {round(np.mean(tot_virtual_test_auc), 3)} ({", ".join([str(round(np.mean(virtual_test_auc[i]), 3)) for i in range(max_simulation_idx)])})')
 
 if __name__ == "__main__":
     n_replications = 3
-    name = 'eas_single_ff_training_test_epoch30'
+    name = 'eas_small_test'
 
     training_args = {
-        'hidden_size': 512,
-        'ffn_hidden_size': 512,
-        'epochs': 30
+        'hidden_size': 64,
+        'ffn_hidden_size': 64,
+        'depth': 3,
+        'ffn_num_layers': 3,
+        'epochs': 50,
+        'init_lr': 0.001
     }
 
+    # dataset = Dataset(
+    #     csv_file_path="eas/eas_dataset.csv"
+    # )
     dataset = SingleFFSimulatedEasDataset(
         csv_file_path="eas/single_ff_simulated_eas.csv",
     )
