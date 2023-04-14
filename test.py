@@ -1,3 +1,5 @@
+# sbatch --gres=gpu:2 --partition zen3_0512_a100x2 --qos zen3_0512_a100x2 --output=job_%A.out submit_training.sh
+
 # import pandas as pd
 # from sklearn.metrics import roc_auc_score
 # from scipy import stats

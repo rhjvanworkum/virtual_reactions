@@ -21,12 +21,13 @@ from atomwise_simulation import AtomwiseSimulation, SimulationIdxPerAtom
 
 
 if __name__ == "__main__":
-    save_path = ""
+    save_path = "./"
     split_file = 'split.npz'
-    use_wandb = False
+    use_wandb = True
     epochs = 50
     cutoff = 5.0
     n_atom_basis = 30
+    n_devices = 2
 
 
     ### dataset
@@ -39,7 +40,7 @@ if __name__ == "__main__":
             trn.CastTo32(),
             SimulationIdxPerAtom()
         ],
-        num_workers=1,
+        num_workers=16,
         pin_memory=True, # set to false, when not using a GPU
         load_properties=['energy', 'simulation_idx'], #only load U0 property
     )
@@ -119,14 +120,14 @@ if __name__ == "__main__":
         'callbacks': callbacks,
         'default_root_dir': './test/',
         'max_epochs': epochs,
-        'devices': 1
+        'devices': n_devices
     }
 
     if torch.cuda.is_available():
         args['accelerator'] = 'gpu'
 
     if use_wandb:
-        wandb_project = os.environ['WANDB_PROJECT']
+        wandb_project = 'ani-cxx'
         logger = WandbLogger(project=wandb_project)
         args['logger'] = logger
 
