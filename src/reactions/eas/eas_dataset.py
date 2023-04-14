@@ -53,11 +53,13 @@ class SimulatedEASDataset(SimulatedDataset):
         source_data = source_dataset.load()
 
         substrates = source_data['substrates'].values
-        compute_substrate = (substrates != np.roll(substrates, 1))
+        # compute_substrate = (substrates != np.roll(substrates, 1))
+        compute_substrate_only_list = np.zeros(len(substrates))
 
         return source_data['substrates'].values, \
                source_data['products'].values, \
-               compute_substrate, \
+               ['Methanol' for _ in range(len(substrates))], \
+               compute_substrate_only_list, \
                source_data['reaction_idx'].values
 
 
@@ -84,6 +86,7 @@ class XtbSimulatedEasDataset(SimulatedEASDataset):
         self,
         substrates: Union[str, List[str]],
         products: Union[str, List[str]],
+        solvents: Union[str, List[str]],
         compute_product_only_list: Union[bool, List[bool]],
         simulation_idx: int,
         n_cpus: int
@@ -92,11 +95,12 @@ class XtbSimulatedEasDataset(SimulatedEASDataset):
         arguments = [{
             'substrate_smiles': substrate.split('.')[0], 
             'product_smiles': product,
+            'solvent': solvent,
             'method': eas_xtb_method,
             'has_openmm_compatability': False,
             'compute_product_only': compute_product_only
 
-        } for substrate, product, compute_product_only in zip(substrates, products, compute_product_only_list)]
+        } for substrate, product, solvent, compute_product_only in zip(substrates, products, solvents, compute_product_only_list)]
         with ProcessPoolExecutor(max_workers=n_cpus) as executor:
             results = list(tqdm(executor.map(compute_eas_conformer_energies, arguments), total=len(arguments)))
         return results
@@ -116,6 +120,7 @@ class SingleFFSimulatedEasDataset(SimulatedEASDataset):
         self,
         substrates: Union[str, List[str]],
         products: Union[str, List[str]],
+        solvents: Union[str, List[str]],
         compute_product_only_list: Union[bool, List[bool]],
         simulation_idx: int,
         n_cpus: int
@@ -123,11 +128,12 @@ class SingleFFSimulatedEasDataset(SimulatedEASDataset):
         arguments = [{
             'substrate_smiles': substrate.split('.')[0], 
             'product_smiles': product,
+            'solvent': solvent,
             'method': eas_ff,
             'has_openmm_compatability': True,
             'compute_product_only': compute_product_only
 
-        } for substrate, product, compute_product_only in zip(substrates, products, compute_product_only_list)]
+        } for substrate, product, solvent, compute_product_only in zip(substrates, products, solvents, compute_product_only_list)]
         with ProcessPoolExecutor(max_workers=n_cpus) as executor:
             results = list(tqdm(executor.map(compute_eas_conformer_energies, arguments), total=len(arguments)))
         return results
@@ -147,6 +153,7 @@ class FFSimulatedEasDataset(SimulatedEASDataset):
         self,
         substrates: Union[str, List[str]],
         products: Union[str, List[str]],
+        solvents: Union[str, List[str]],
         compute_product_only_list: Union[bool, List[bool]],
         simulation_idx: int,
         n_cpus: int
@@ -154,11 +161,12 @@ class FFSimulatedEasDataset(SimulatedEASDataset):
         arguments = [{
             'substrate_smiles': substrate.split('.')[0], 
             'product_smiles': product,
+            'solvent': solvent,
             'method': eas_ff_methods[simulation_idx],
             'has_openmm_compatability': True,
             'compute_product_only': compute_product_only
 
-        } for substrate, product, compute_product_only in zip(substrates, products, compute_product_only_list)]
+        } for substrate, product, solvent, compute_product_only in zip(substrates, products, solvents, compute_product_only_list)]
         with ProcessPoolExecutor(max_workers=n_cpus) as executor:
             results = list(tqdm(executor.map(compute_eas_conformer_energies, arguments), total=len(arguments)))
         return results

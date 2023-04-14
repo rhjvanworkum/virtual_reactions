@@ -15,7 +15,8 @@ class SimulatedDADataset(SimulatedDataset):
         csv_file_path: str, 
         n_simulations: int = 1
     ) -> None:
-        super().__init__(csv_file_path, n_simulations)
+        n_substrates = 2
+        super().__init__(csv_file_path, n_simulations, n_substrates)
 
     def _select_reaction_to_simulate(
         self,
@@ -24,11 +25,14 @@ class SimulatedDADataset(SimulatedDataset):
         source_data = source_dataset.load()
 
         substrates = source_data['substrates'].values
-        compute_substrate = (substrates != np.roll(substrates, 1))
+        compute_substrate_only_list = np.zeros(len(substrates))
+
+        #    source_data['solvent'].values, \
 
         return source_data['substrates'].values, \
                source_data['products'].values, \
-               compute_substrate, \
+               [None for _ in range(len(substrates))], \
+               compute_substrate_only_list, \
                source_data['reaction_idx'].values
     
 
@@ -55,6 +59,7 @@ class XtbSimulatedDADataset(SimulatedDADataset):
         self,
         substrates: Union[str, List[str]],
         products: Union[str, List[str]],
+        solvents: Union[str, List[str]],
         compute_product_only_list: Union[bool, List[bool]],
         simulation_idx: int,
         n_cpus: int
@@ -63,11 +68,12 @@ class XtbSimulatedDADataset(SimulatedDADataset):
         arguments = [{
             'substrate_smiles': substrate, 
             'product_smiles': product,
+            'solvent': solvent,
             'method': XtbMethod(),
             'has_openmm_compatability': False,
             'compute_product_only': compute_product_only
 
-        } for substrate, product, compute_product_only in zip(substrates, products, compute_product_only_list)]
+        } for substrate, product, solvent, compute_product_only in zip(substrates, products, solvents, compute_product_only_list)]
         with ProcessPoolExecutor(max_workers=n_cpus) as executor:
             results = list(tqdm(executor.map(compute_da_conformer_energies, arguments), total=len(arguments)))
         return results
