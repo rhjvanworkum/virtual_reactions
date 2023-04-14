@@ -1,5 +1,5 @@
 # include python path
-PYTHONPATH="/home/rhjvanworkum/virtual_reactions/:/home/rhjvanworkum/virtual_reactions/huxel/:$PYTHONPATH"
+PYTHONPATH="/home/ruard/code/virtual_reactions/:/home/ruard/code/virtual_reactions/huxel/:$PYTHONPATH"
 export PYTHONPATH
 
 export BASE_PATH="/home/rhjvanworkum/virtual_reactions/"
