@@ -24,10 +24,9 @@ if __name__ == "__main__":
     save_path = ""
     split_file = 'split.npz'
     use_wandb = False
-    epochs = 50
+    epochs = 200
     cutoff = 5.0
     n_atom_basis = 30
-
 
     ### dataset
     dataset = AtomsDataModule(
