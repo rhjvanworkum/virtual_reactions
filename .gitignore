@@ -6,6 +6,8 @@ results/
 *.xyz
 experiments/
 test_2.csv
+wandb/
+checkpoints/
 
 
 # Byte-compiled / optimized / DLL files

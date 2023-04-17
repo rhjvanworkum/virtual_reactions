@@ -1,8 +1,10 @@
-# # import pandas as pd
-# # from sklearn.metrics import roc_auc_score
-# # from scipy import stats
-# # import matplotlib.pyplot as plt
-# # from src.reactions.e2_sn2 import e2_sn2_methods
+# sbatch --gres=gpu:2 --partition zen3_0512_a100x2 --qos zen3_0512_a100x2 --output=job_%A.out submit_training.sh
+
+# import pandas as pd
+# from sklearn.metrics import roc_auc_score
+# from scipy import stats
+# import matplotlib.pyplot as plt
+# from src.reactions.e2_sn2 import e2_sn2_methods
 
 # # from src.reactions.e2_sn2.e2_sn2_dataset import XtbSimulatedE2Sn2Dataset, compute_e2_sn2_reaction_barriers, list_to_atom
 # # from src.reactions.e2_sn2.e2_sn2_dataset import E2Sn2Dataset
