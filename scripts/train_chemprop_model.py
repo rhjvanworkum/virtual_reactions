@@ -15,7 +15,8 @@ def train_and_evaluate_chemprop_model(
     source_data: pd.DataFrame,
     dataset_split: Split,
     base_dir: os.path,
-    training_args: Dict[str, str]
+    training_args: Dict[str, str],
+    prediction_args: Dict[str, str]
 ) -> None:
     max_simulation_idx = max(source_data['simulation_idx'].values) + 1
 
@@ -43,18 +44,18 @@ def train_and_evaluate_chemprop_model(
             split_data.to_csv(data_file_path)
 
         # 2. Perform training
-        os.system(
-            f"chemprop_train \
-            --reaction --reaction_mode reac_diff \
-            --smiles_columns smiles --target_columns label \
-            --data_path {os.path.join(base_dir, 'train_data.csv')} \
-            --separate_val_path {os.path.join(base_dir, 'val_data.csv')} \
-            --separate_test_path {os.path.join(base_dir, 'ood_test_data.csv')} \
-            --dataset_type classification \
-            --pytorch_seed {random_seed} \
-            --save_dir {base_dir} " \
-            + " ".join([f"--{key} {val}" for key, val in training_args.items()])
-        )
+        # os.system(
+        #     f"chemprop_train \
+        #     --reaction --reaction_mode reac_diff \
+        #     --smiles_columns smiles --target_columns label \
+        #     --data_path {os.path.join(base_dir, 'train_data.csv')} \
+        #     --separate_val_path {os.path.join(base_dir, 'val_data.csv')} \
+        #     --separate_test_path {os.path.join(base_dir, 'ood_test_data.csv')} \
+        #     --dataset_type classification \
+        #     --pytorch_seed {random_seed} \
+        #     --save_dir {base_dir} " \
+        #     + " ".join([f"--{key} {val}" for key, val in training_args.items()])
+        # )
 
         # 3. Evaluate model
         for split, tot_auc_list, auc_list in zip(
@@ -67,7 +68,8 @@ def train_and_evaluate_chemprop_model(
                 --smiles_columns smiles \
                 --test_path {os.path.join(base_dir, f'{split}_data.csv')} \
                 --checkpoint_dir {base_dir} \
-                --preds_path {os.path.join(base_dir, f'{split}_data_preds.csv')}"
+                --preds_path {os.path.join(base_dir, f'{split}_data_preds.csv')} "
+                + " ".join([f"--{key}={val}" if val != '' else f"--{key} {val}" for key, val in prediction_args.items()])
             )
             true_df = pd.read_csv(os.path.join(base_dir, f'{split}_data.csv'))
             if os.path.exists(os.path.join(base_dir, f'{split}_data_preds.csv')):
@@ -138,16 +140,23 @@ def train_and_evaluate_chemprop_model(
     print(f'Virtual Test: {round(np.mean(tot_virtual_test_auc), 3)} ({", ".join([str(round(np.mean(virtual_test_auc[i]), 3)) for i in range(max_simulation_idx)])})')
 
 if __name__ == "__main__":
-    n_replications = 3
+    n_replications = 1
     name = 'eas_small_test'
 
     training_args = {
-        'hidden_size': 64,
-        'ffn_hidden_size': 64,
-        'depth': 3,
-        'ffn_num_layers': 3,
-        'epochs': 50,
-        'init_lr': 0.001
+        'hidden_size': 512,
+        # 'ffn_hidden_size': 64,
+        # 'depth': 3,
+        # 'ffn_num_layers': 3,
+        'epochs': 30,
+        'init_lr': 0.0001,
+        'features_generator': 'rdkit_2d_normalized',
+        'no_features_scaling': '',
+    }
+
+    prediction_args = {
+        'features_generator': 'rdkit_2d_normalized',
+        'no_features_scaling': '',
     }
 
     # dataset = Dataset(
@@ -178,7 +187,8 @@ if __name__ == "__main__":
         source_data=source_data,
         dataset_split=dataset_split,
         base_dir=base_dir,
-        training_args=training_args
+        training_args=training_args,
+        prediction_args=prediction_args
     )
 
 

@@ -21,10 +21,10 @@ from atomwise_simulation import AtomwiseSimulation, SimulationIdxPerAtom
 
 
 if __name__ == "__main__":
-    name = 'cc_10'
-    data_path = './10k_dataset.db'
-    save_path = f"./models/{name}.pt"
-    split_file = 'split_cc_10.npz'
+    name = 'cc_5_dft_100'
+    data_path = './data/experiment_1/cc_dft_dataset.db'
+    save_path = f"./data/experiment_1/models/{name}.pt"
+    split_file = './data/experiment_1/splits/cc_5_dft_100.npz'
      
     cutoff = 5.0
     n_atom_basis = 32
@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
     use_wandb = True
     epochs = 200
-    n_devices = 2
+    n_devices = 1
 
 
     ### dataset
