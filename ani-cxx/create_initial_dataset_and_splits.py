@@ -84,7 +84,7 @@ if __name__ == "__main__":
     for mol in train_mols:
         idxs = cc_mol_geom_idx[mol]
         np.random.shuffle(idxs)
-        cc_idxs = idxs[:len(int(percentage_real_data * len(idxs)))]
+        cc_idxs = idxs[:int(percentage_real_data * len(idxs))]
         for idx in cc_idxs:
             atom, property = get_cc_atoms(mol, idx)
             atoms.append(atom)
@@ -99,7 +99,7 @@ if __name__ == "__main__":
         np.random.shuffle(idxs)
 
         i = 0
-        for idx in cc_idxs:
+        for idx in idxs:
             atom, property = get_dft_atoms(mol, idx)
             atoms.append(atom)
             properties.append(property)
@@ -134,6 +134,10 @@ if __name__ == "__main__":
     
     
     # save splits
+    if not os.path.exists(os.path.join(save_folder, 'splits/')):
+        os.makedirs(os.path.join(save_folder, 'splits/'))
+    if not os.path.exists(os.path.join(save_folder, 'splits/mol_splits/')):
+        os.makedirs(os.path.join(save_folder, 'splits/mol_splits/'))
     ood_test_idxs = np.arange(len(atoms) - n_test_datapoints, n_test_datapoints)
 
     # 1) CC_5 split
