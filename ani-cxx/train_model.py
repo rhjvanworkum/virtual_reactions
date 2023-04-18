@@ -17,19 +17,22 @@ from pytorch_lightning.loggers import WandbLogger
 import torch
 import torchmetrics
 
-from atomwise_simulation import AtomwiseSimulation, SimulationIdxPerAtom
+from src.atomwise_simulation import AtomwiseSimulation, SimulationIdxPerAtom
+from src.simulated_atoms_datamodule import SimulatedAtomsDataModule
+from src.task import SimulatedAtomisticTask, SimulatedModelOutput
 
 
 if __name__ == "__main__":
-    name = 'cc_5_dft_100'
+    name = 'testje'
     data_path = './data/experiment_1/cc_dft_dataset.db'
     save_path = f"./data/experiment_1/models/{name}.pt"
     split_file = './data/experiment_1/splits/cc_5_dft_100.npz'
+    has_virtual_reactions = True
      
     cutoff = 5.0
     n_atom_basis = 32
     lr = 1e-4
-    batch_size = 32
+    batch_size = 8
 
 
     use_wandb = True
@@ -38,7 +41,7 @@ if __name__ == "__main__":
 
 
     ### dataset
-    dataset = AtomsDataModule(
+    dataset = SimulatedAtomsDataModule(
         datapath=data_path,
         split_file=split_file,
         batch_size=batch_size,
@@ -74,7 +77,7 @@ if __name__ == "__main__":
         ]
     )
 
-    output = spk.task.ModelOutput(
+    output = SimulatedModelOutput(
         name='energy',
         loss_fn=torch.nn.MSELoss(),
         loss_weight=1.,
@@ -82,7 +85,7 @@ if __name__ == "__main__":
             "MAE": torchmetrics.MeanAbsoluteError()
         }
     )
-    model = spk.task.AtomisticTask(
+    model = SimulatedAtomisticTask(
         model=nnpot,
         outputs=[output],
         optimizer_cls=torch.optim.Adam,
@@ -142,4 +145,13 @@ if __name__ == "__main__":
 
     logging.info("Start training")
     trainer.fit(model, datamodule=dataset)
-    trainer.test(model, datamodule=dataset)
+
+
+    logging.info("Start testing")
+    dataloaders = [
+        dataset.ood_test_dataloader(),
+        dataset.iid_test_dataloader(),
+    ]
+    if has_virtual_reactions:
+        dataloaders.append(dataset.virtual_test_dataloader())
+    trainer.test(model, dataloaders=dataloaders)

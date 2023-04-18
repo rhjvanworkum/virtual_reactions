@@ -8,6 +8,7 @@ experiments/
 test_2.csv
 wandb/
 checkpoints/
+test/
 
 
 # Byte-compiled / optimized / DLL files
