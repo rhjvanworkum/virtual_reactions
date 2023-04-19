@@ -285,11 +285,11 @@ class SimulatedAtomsDataModule(pl.LightningDataModule):
                 self._log_with_rank("Load split")
 
                 S = np.load(self.split_file)
-                self.train_idx = S["train_idx"].tolist()[:10]
-                self.val_idx = S["val_idx"].tolist()[:10]
-                self.ood_test_idx = S["ood_test_idx"].tolist()[:100]
-                self.iid_test_idx = S["iid_test_idx"].tolist()[:100]
-                self.virtual_test_idx = S["virtual_test_idx"].tolist()[:100]
+                self.train_idx = S["train_idx"].tolist()
+                self.val_idx = S["val_idx"].tolist()
+                self.ood_test_idx = S["ood_test_idx"].tolist()
+                self.iid_test_idx = S["iid_test_idx"].tolist()
+                self.virtual_test_idx = S["virtual_test_idx"].tolist()
 
                 if self.num_train and self.num_train != len(self.train_idx):
                     logging.warning(

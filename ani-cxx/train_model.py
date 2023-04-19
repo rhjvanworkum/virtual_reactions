@@ -6,7 +6,6 @@ I guess we wanna be able to do 2 approaches again:
 """
 
 import logging
-import os
 import pytorch_lightning
 
 import schnetpack as spk
@@ -23,21 +22,28 @@ from src.task import SimulatedAtomisticTask, SimulatedModelOutput
 
 
 if __name__ == "__main__":
-    name = 'testje'
+    name = 'cc_5_dft_100_big'
     data_path = './data/experiment_1/cc_dft_dataset.db'
     save_path = f"./data/experiment_1/models/{name}.pt"
     split_file = './data/experiment_1/splits/cc_5_dft_100.npz'
     has_virtual_reactions = True
      
-    cutoff = 5.0
-    n_atom_basis = 32
     lr = 1e-4
-    batch_size = 8
-
+    batch_size = 32
+    cutoff = 5.0
+    n_radial = 64
+    n_atom_basis = 128
+    n_interactions = 3
 
     use_wandb = True
-    epochs = 1
+    epochs = 200
     n_devices = 1
+
+
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
 
 
     ### dataset
@@ -59,10 +65,10 @@ if __name__ == "__main__":
 
     ### model
     pairwise_distance = spk.atomistic.PairwiseDistances() # calculates pairwise distances between atoms
-    radial_basis = spk.nn.GaussianRBF(n_rbf=20, cutoff=cutoff)
+    radial_basis = spk.nn.GaussianRBF(n_rbf=n_radial, cutoff=cutoff)
     schnet = spk.representation.SchNet(
         n_atom_basis=n_atom_basis, 
-        n_interactions=3,
+        n_interactions=n_interactions,
         radial_basis=radial_basis,
         cutoff_fn=spk.nn.CosineCutoff(cutoff)
     )
@@ -78,6 +84,7 @@ if __name__ == "__main__":
     )
 
     output = SimulatedModelOutput(
+        device=device,
         name='energy',
         loss_fn=torch.nn.MSELoss(),
         loss_weight=1.,
