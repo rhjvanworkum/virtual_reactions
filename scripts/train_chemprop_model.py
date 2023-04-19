@@ -44,18 +44,18 @@ def train_and_evaluate_chemprop_model(
             split_data.to_csv(data_file_path)
 
         # 2. Perform training
-        # os.system(
-        #     f"chemprop_train \
-        #     --reaction --reaction_mode reac_diff \
-        #     --smiles_columns smiles --target_columns label \
-        #     --data_path {os.path.join(base_dir, 'train_data.csv')} \
-        #     --separate_val_path {os.path.join(base_dir, 'val_data.csv')} \
-        #     --separate_test_path {os.path.join(base_dir, 'ood_test_data.csv')} \
-        #     --dataset_type classification \
-        #     --pytorch_seed {random_seed} \
-        #     --save_dir {base_dir} " \
-        #     + " ".join([f"--{key} {val}" for key, val in training_args.items()])
-        # )
+        os.system(
+            f"chemprop_train \
+            --reaction --reaction_mode reac_diff \
+            --smiles_columns smiles --target_columns label \
+            --data_path {os.path.join(base_dir, 'train_data.csv')} \
+            --separate_val_path {os.path.join(base_dir, 'val_data.csv')} \
+            --separate_test_path {os.path.join(base_dir, 'ood_test_data.csv')} \
+            --dataset_type classification \
+            --pytorch_seed {random_seed} \
+            --save_dir {base_dir} " \
+            + " ".join([f"--{key} {val}" for key, val in training_args.items()])
+        )
 
         # 3. Evaluate model
         for split, tot_auc_list, auc_list in zip(
@@ -76,12 +76,13 @@ def train_and_evaluate_chemprop_model(
                 pred_df = pd.read_csv(os.path.join(base_dir, f'{split}_data_preds.csv'))
 
                 # total roc auc
-                tot_auc_list.append(
-                    roc_auc_score(
-                        true_df['label'].values, 
-                        pred_df['label'].values
+                if len(true_df['label'].values) > 0 and len(pred_df['label'].values) > 0:
+                    tot_auc_list.append(
+                        roc_auc_score(
+                            true_df['label'].values, 
+                            pred_df['label'].values
+                        )
                     )
-                )
 
                 # virtual reaction specific roc auc
                 for simulation_idx in range(max_simulation_idx):
@@ -144,7 +145,7 @@ if __name__ == "__main__":
     name = 'eas_small_test'
 
     training_args = {
-        'hidden_size': 512,
+        # 'hidden_size': 512,
         # 'ffn_hidden_size': 64,
         # 'depth': 3,
         # 'ffn_num_layers': 3,
@@ -162,8 +163,13 @@ if __name__ == "__main__":
     # dataset = Dataset(
     #     csv_file_path="eas/eas_dataset.csv"
     # )
-    dataset = SingleFFSimulatedEasDataset(
-        csv_file_path="eas/single_ff_simulated_eas.csv",
+    # source_data = dataset.load()
+    
+    # dataset = SingleFFSimulatedEasDataset(
+    #     csv_file_path="eas/single_ff_simulated_eas.csv",
+    # )
+    dataset = XtbSimulatedEasDataset(
+        csv_file_path="eas/xtb_simulated_eas.csv",
     )
     source_data = dataset.load(
         aggregation_mode='low',

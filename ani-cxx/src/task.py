@@ -21,6 +21,7 @@ class SimulatedModelOutput(ModelOutput):
     def __init__(
         self,
         name: str,
+        device: torch.device,
         loss_fn: Optional[nn.Module] = None,
         loss_weight: float = 1.0,
         metrics: Optional[Dict[str, Metric]] = None,
@@ -29,7 +30,7 @@ class SimulatedModelOutput(ModelOutput):
     ):
         super().__init__(name, loss_fn, loss_weight, metrics, constraints, target_property)
         for key in ['OOD_test', 'IID_test', 'VIRTUAL_test']:
-            self.metrics[key] = nn.ModuleDict({k: v.clone() for k, v in metrics.items()})
+            self.metrics[key] = nn.ModuleDict({k: v.clone() for k, v in metrics.items()}).to(device)
 
 
 class SimulatedAtomisticTask(AtomisticTask):
