@@ -12,6 +12,7 @@ from src.split import HeteroCycleSplit, Split
 
 def train_and_evaluate_chemprop_model(
     n_replications: int,
+    use_features: bool,
     source_data: pd.DataFrame,
     dataset_split: Split,
     base_dir: os.path,
@@ -21,7 +22,7 @@ def train_and_evaluate_chemprop_model(
     max_simulation_idx = max(source_data['simulation_idx'].values) + 1
 
     # generate dataset if needed
-    dataset.generate_chemprop_dataset()
+    dataset.generate_chemprop_dataset(simulation_idx_as_features=use_features)
 
     # construct evaluation metrics
     tot_train_auc, tot_val_auc, tot_ood_test_auc, tot_iid_test_auc, tot_virtual_test_auc = [], [], [], [], []
@@ -40,12 +41,11 @@ def train_and_evaluate_chemprop_model(
             [train_uids, val_uids, ood_test_uids, iid_test_uids, virtual_test_uids],
             [os.path.join(base_dir, f'{split}_data.csv') for split in ['train', 'val', 'ood_test', 'iid_test', 'virtual_test']]
         ):
-            split_data = dataset.load_chemprop_dataset(uids=uids)
-            split_data.to_csv(data_file_path)
+            dataframe = dataset.load_chemprop_dataset(uids=uids)
+            dataframe.to_csv(data_file_path)
 
         # 2. Perform training
-        os.system(
-            f"chemprop_train \
+        training_cmd =  f"chemprop_train \
             --reaction --reaction_mode reac_diff \
             --smiles_columns smiles --target_columns label \
             --data_path {os.path.join(base_dir, 'train_data.csv')} \
@@ -53,9 +53,24 @@ def train_and_evaluate_chemprop_model(
             --separate_test_path {os.path.join(base_dir, 'ood_test_data.csv')} \
             --dataset_type classification \
             --pytorch_seed {random_seed} \
-            --save_dir {base_dir} " \
-            + " ".join([f"--{key} {val}" for key, val in training_args.items()])
-        )
+            --save_dir {base_dir} "
+        
+        training_cmd += " ".join([f"--{key} {val}" for key, val in training_args.items()])
+        
+        if use_features:
+            for uids, data_file_path in zip(
+                [train_uids, val_uids, ood_test_uids, iid_test_uids, virtual_test_uids],
+                [os.path.join(base_dir, f'{split}_feat.npz') for split in ['train', 'val', 'ood_test', 'iid_test', 'virtual_test']]
+            ):
+                features = dataset.load_chemprop_features(uids=uids)
+                np.savez(data_file_path, *features)
+            
+            training_cmd += f" --atom_descriptors feature \
+            --atom_descriptors_path {os.path.join(base_dir, 'train_feat.npz')} \
+            --separate_val_atom_descriptors_path {os.path.join(base_dir, 'val_feat.npz')} \
+            --separate_test_atom_descriptors_path {os.path.join(base_dir, 'ood_test_feat.npz')}"
+        
+        os.system(training_cmd)
 
         # 3. Evaluate model
         for split, tot_auc_list, auc_list in zip(
@@ -63,14 +78,19 @@ def train_and_evaluate_chemprop_model(
             [tot_train_auc, tot_val_auc, tot_ood_test_auc, tot_iid_test_auc, tot_virtual_test_auc],
             [train_auc, val_auc, ood_test_auc, iid_test_auc, virtual_test_auc]
         ):
-            os.system(
-                f"chemprop_predict \
-                --smiles_columns smiles \
-                --test_path {os.path.join(base_dir, f'{split}_data.csv')} \
-                --checkpoint_dir {base_dir} \
-                --preds_path {os.path.join(base_dir, f'{split}_data_preds.csv')} "
-                + " ".join([f"--{key}={val}" if val != '' else f"--{key} {val}" for key, val in prediction_args.items()])
-            )
+            predict_cmd = f"chemprop_predict \
+            --smiles_columns smiles \
+            --test_path {os.path.join(base_dir, f'{split}_data.csv')} \
+            --checkpoint_dir {base_dir} \
+            --preds_path {os.path.join(base_dir, f'{split}_data_preds.csv')} "
+            
+            predict_cmd += " ".join([f"--{key}={val}" if val != '' else f"--{key} {val}" for key, val in prediction_args.items()])
+            
+            if use_features:
+                predict_cmd += f" --atom_descriptors feature --atom_descriptors_path {os.path.join(base_dir, f'{split}_feat.npz')}"
+            
+            os.system(predict_cmd)
+
             true_df = pd.read_csv(os.path.join(base_dir, f'{split}_data.csv'))
             if os.path.exists(os.path.join(base_dir, f'{split}_data_preds.csv')):
                 pred_df = pd.read_csv(os.path.join(base_dir, f'{split}_data_preds.csv'))
@@ -142,39 +162,43 @@ def train_and_evaluate_chemprop_model(
 
 if __name__ == "__main__":
     n_replications = 1
-    name = 'eas_small_test'
+    name = 'eas_large_test3'
+    use_features = True
 
     training_args = {
         # 'hidden_size': 512,
         # 'ffn_hidden_size': 64,
         # 'depth': 3,
         # 'ffn_num_layers': 3,
-        'epochs': 30,
-        'init_lr': 0.0001,
-        'features_generator': 'rdkit_2d_normalized',
-        'no_features_scaling': '',
+        'epochs': 60,
+        'init_lr': 0.001,
+        # 'features_generator': 'rdkit_2d_normalized',
+        # 'no_features_scaling': '',
     }
 
     prediction_args = {
-        'features_generator': 'rdkit_2d_normalized',
-        'no_features_scaling': '',
+        # 'features_generator': 'rdkit_2d_normalized',
+        # 'no_features_scaling': '',
     }
 
-    # dataset = Dataset(
-    #     csv_file_path="eas/eas_dataset.csv"
-    # )
-    # source_data = dataset.load()
+    dataset = Dataset(
+        csv_file_path="eas/eas_dataset.csv"
+    )
+    source_data = dataset.load()
     
+    # dataset = FFSimulatedEasDataset(
+    #     csv_file_path="eas/ff_simulated_eas.csv"
+    # )
     # dataset = SingleFFSimulatedEasDataset(
     #     csv_file_path="eas/single_ff_simulated_eas.csv",
     # )
-    dataset = XtbSimulatedEasDataset(
-        csv_file_path="eas/xtb_simulated_eas.csv",
-    )
-    source_data = dataset.load(
-        aggregation_mode='low',
-        margin=3 / 627.5
-    )
+    # dataset = XtbSimulatedEasDataset(
+    #     csv_file_path="eas/xtb_simulated_eas.csv",
+    # )
+    # source_data = dataset.load(
+    #     aggregation_mode='low',
+    #     margin=3 / 627.5
+    # )
 
     dataset_split = HeteroCycleSplit(
         train_split=0.9,
@@ -190,6 +214,7 @@ if __name__ == "__main__":
 
     train_and_evaluate_chemprop_model(
         n_replications=n_replications,
+        use_features=use_features,
         source_data=source_data,
         dataset_split=dataset_split,
         base_dir=base_dir,
