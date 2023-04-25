@@ -51,8 +51,12 @@
 # # print(parameters)
 # # # print(type(parameters))
 
-import numpy as np
+import pandas as pd
 
-a = np.array([0,0,0,2])
-b= a
-print(np.concatenate([a,b]))
+
+df = pd.DataFrame({
+    'a': [0, 1, 2, 3],
+    # 'b': [9, 5,5 ,3]
+})
+
+print(df.iloc[1, 1])

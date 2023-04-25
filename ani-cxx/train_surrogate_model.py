@@ -22,10 +22,10 @@ from src.task import SimulatedAtomisticTask, SimulatedModelOutput
 
 
 if __name__ == "__main__":
-    name = 'mol0'
+    name = 'mol4'
     data_path = './data/experiment_1/cc_dft_dataset.db'
     save_path = f"./data/experiment_1/models/{name}.pt"
-    split_file = './data/experiment_1/splits/mol_splits/mol0.npz'
+    split_file = './data/experiment_1/splits/mol_splits/mol4.npz'
     has_virtual_reactions = True
      
     lr = 1e-4
@@ -127,7 +127,7 @@ if __name__ == "__main__":
         pytorch_lightning.callbacks.EarlyStopping(
         monitor="val_loss", 
         min_delta=1e-6, 
-        patience=10, 
+        patience=30, 
         verbose=False, 
         mode="min"
         )
