@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     use_wandb = True
     epochs = 200
-    n_devices = 1
+    n_devices = 2
 
 
     if torch.cuda.is_available():
