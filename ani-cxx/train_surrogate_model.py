@@ -22,11 +22,11 @@ from src.task import SimulatedAtomisticTask, SimulatedModelOutput
 
 
 if __name__ == "__main__":
-    name = 'mol4'
+    name = 'mol3'
     data_path = './data/experiment_1/cc_dft_dataset.db'
     save_path = f"./data/experiment_1/models/{name}.pt"
-    split_file = './data/experiment_1/splits/mol_splits/mol4.npz'
-    has_virtual_reactions = True
+    split_file = './data/experiment_1/splits/mol_splits/mol3.npz'
+    has_virtual_reactions = False
      
     lr = 1e-4
     batch_size = 32
@@ -141,7 +141,8 @@ if __name__ == "__main__":
     }
 
     if torch.cuda.is_available():
-        args['accelerator'] = 'gpu'
+        args["accelerator"] = "cuda"
+        args["num_nodes"] = 1
 
     if use_wandb:
         wandb_project = 'ani-cxx'
