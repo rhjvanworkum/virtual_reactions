@@ -162,7 +162,7 @@ def train_and_evaluate_chemprop_model(
 
 if __name__ == "__main__":
     n_replications = 1
-    name = 'eas_large_test3'
+    name = 'eas_large_test6'
     use_features = True
 
     training_args = {
@@ -170,7 +170,7 @@ if __name__ == "__main__":
         # 'ffn_hidden_size': 64,
         # 'depth': 3,
         # 'ffn_num_layers': 3,
-        'epochs': 60,
+        'epochs': 200,
         'init_lr': 0.001,
         # 'features_generator': 'rdkit_2d_normalized',
         # 'no_features_scaling': '',
@@ -181,24 +181,24 @@ if __name__ == "__main__":
         # 'no_features_scaling': '',
     }
 
-    dataset = Dataset(
-        csv_file_path="eas/eas_dataset.csv"
-    )
-    source_data = dataset.load()
-    
-    # dataset = FFSimulatedEasDataset(
-    #     csv_file_path="eas/ff_simulated_eas.csv"
+    # dataset = Dataset(
+    #     csv_file_path="eas/eas_dataset.csv"
     # )
+    # source_data = dataset.load()
+    
+    dataset = FFSimulatedEasDataset(
+        csv_file_path="eas/ff_simulated_eas.csv"
+    )
     # dataset = SingleFFSimulatedEasDataset(
     #     csv_file_path="eas/single_ff_simulated_eas.csv",
     # )
     # dataset = XtbSimulatedEasDataset(
     #     csv_file_path="eas/xtb_simulated_eas.csv",
     # )
-    # source_data = dataset.load(
-    #     aggregation_mode='low',
-    #     margin=3 / 627.5
-    # )
+    source_data = dataset.load(
+        aggregation_mode='low',
+        margin=3 / 627.5
+    )
 
     dataset_split = HeteroCycleSplit(
         train_split=0.9,
