@@ -24,6 +24,7 @@ from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem.rdPartialCharges import ComputeGasteigerCharges
 from openff.toolkit.topology import Molecule
 from openff.toolkit.typing.engines.smirnoff import ForceField
+from src.methods.fukui import compute_fukui_indices
 
 from src.utils import Atom, EditedRDKitToolkitWrapper, write_xyz_file
 
@@ -98,6 +99,10 @@ class Compound:
         rdkit_mol = Chem.MolFromSmiles(smiles)
         rdkit_mol = Chem.AddHs(rdkit_mol)
         return cls(rdkit_mol, **kwargs)
+
+    @property
+    def n_atoms(self):
+        return len(self.conformers[0])
 
     def to_xyz(
         self, 
@@ -193,3 +198,27 @@ class Compound:
             self.conformers = best_conformers
             if self.has_openmm_compatability:
                 self._set_openmm_conformers()
+
+    def compute_fukui_indices(
+        self
+    ):
+        indices = []
+        for idx in range(len(self.conformers)):
+            indices.append(
+                compute_fukui_indices(
+                    molecule=self,
+                    keywords=['--opt'],
+                    conformer_idx=idx
+                )
+            )
+        
+        mean_indices = []
+        for idx in range(len(indices[0])):
+            mean_indices.append(
+                (
+                    np.mean(np.array([idxs[idx][0] for idxs in indices])),
+                    np.mean(np.array([idxs[idx][1] for idxs in indices])),
+                    np.mean(np.array([idxs[idx][2] for idxs in indices]))
+                )
+            )
+        return mean_indices
