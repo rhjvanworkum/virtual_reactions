@@ -35,7 +35,7 @@ if __name__ == "__main__":
     has_virtual_reactions = True
      
     lr = 1e-4
-    batch_size = 16
+    batch_size = 32
     cutoff = 5.0
     n_radial = 64
     n_atom_basis = 128
@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     use_wandb = True
     epochs = 200
-    n_devices = 2
+    n_devices = 1
 
 
     if torch.cuda.is_available():
@@ -143,7 +143,7 @@ if __name__ == "__main__":
         'callbacks': callbacks,
         'default_root_dir': './test/',
         'max_epochs': epochs,
-        'devices': [0,1]
+        'devices': n_devices
     }
 
     if torch.cuda.is_available():
