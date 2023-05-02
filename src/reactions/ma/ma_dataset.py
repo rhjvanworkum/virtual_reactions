@@ -32,7 +32,7 @@ class SimulatedMADataset(SimulatedDataset):
 
         return source_data['substrates'].values, \
                source_data['products'].values, \
-               [None for _ in range(len(substrates))], \
+               source_data['solvent'].values, \
                compute_substrate_only_list, \
                source_data['reaction_idx'].values
     
