@@ -6,7 +6,6 @@ I guess we wanna be able to do 2 approaches again:
 """
 
 import logging
-import os
 import pytorch_lightning
 
 import schnetpack as spk
@@ -17,28 +16,47 @@ from pytorch_lightning.loggers import WandbLogger
 import torch
 import torchmetrics
 
-from atomwise_simulation import AtomwiseSimulation, SimulationIdxPerAtom
+from src.atomwise_simulation import AtomwiseSimulation, SimulationIdxPerAtom
+from src.simulated_atoms_datamodule import SimulatedAtomsDataModule
+from src.task import SimulatedAtomisticTask, SimulatedModelOutput
 
 
 if __name__ == "__main__":
-    save_path = ""
-    split_file = 'split.npz'
-    use_wandb = False
-    epochs = 200
+    name = 'mol3'
+    data_path = './data/experiment_1/cc_dft_dataset.db'
+    save_path = f"./data/experiment_1/models/{name}.pt"
+    split_file = './data/experiment_1/splits/mol_splits/mol3.npz'
+    has_virtual_reactions = False
+     
+    lr = 1e-4
+    batch_size = 32
     cutoff = 5.0
-    n_atom_basis = 30
+    n_radial = 16
+    n_atom_basis = 32
+    n_interactions = 3
+
+    use_wandb = True
+    epochs = 200
+    n_devices = 2
+
+
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
+
 
     ### dataset
-    dataset = AtomsDataModule(
-        datapath='./10k_dataset.db',
+    dataset = SimulatedAtomsDataModule(
+        datapath=data_path,
         split_file=split_file,
-        batch_size=32,
+        batch_size=batch_size,
         transforms=[
-            trn.ASENeighborList(cutoff=5.),
+            trn.ASENeighborList(cutoff=cutoff),
             trn.CastTo32(),
             SimulationIdxPerAtom()
         ],
-        num_workers=1,
+        num_workers=2,
         pin_memory=True, # set to false, when not using a GPU
         load_properties=['energy', 'simulation_idx'], #only load U0 property
     )
@@ -47,10 +65,10 @@ if __name__ == "__main__":
 
     ### model
     pairwise_distance = spk.atomistic.PairwiseDistances() # calculates pairwise distances between atoms
-    radial_basis = spk.nn.GaussianRBF(n_rbf=20, cutoff=cutoff)
+    radial_basis = spk.nn.GaussianRBF(n_rbf=n_radial, cutoff=cutoff)
     schnet = spk.representation.SchNet(
         n_atom_basis=n_atom_basis, 
-        n_interactions=3,
+        n_interactions=n_interactions,
         radial_basis=radial_basis,
         cutoff_fn=spk.nn.CosineCutoff(cutoff)
     )
@@ -65,7 +83,8 @@ if __name__ == "__main__":
         ]
     )
 
-    output = spk.task.ModelOutput(
+    output = SimulatedModelOutput(
+        device=device,
         name='energy',
         loss_fn=torch.nn.MSELoss(),
         loss_weight=1.,
@@ -73,11 +92,11 @@ if __name__ == "__main__":
             "MAE": torchmetrics.MeanAbsoluteError()
         }
     )
-    model = spk.task.AtomisticTask(
+    model = SimulatedAtomisticTask(
         model=nnpot,
         outputs=[output],
-        optimizer_cls=torch.optim.AdamW,
-        optimizer_args={"lr": 1e-4}
+        optimizer_cls=torch.optim.Adam,
+        optimizer_args={"lr": lr}
     )
 
 
@@ -108,7 +127,7 @@ if __name__ == "__main__":
         pytorch_lightning.callbacks.EarlyStopping(
         monitor="val_loss", 
         min_delta=1e-6, 
-        patience=50, 
+        patience=30, 
         verbose=False, 
         mode="min"
         )
@@ -118,19 +137,19 @@ if __name__ == "__main__":
         'callbacks': callbacks,
         'default_root_dir': './test/',
         'max_epochs': epochs,
-        'devices': 1
+        'devices': n_devices
     }
 
     if torch.cuda.is_available():
-        args['accelerator'] = 'gpu'
+        args["accelerator"] = "cuda"
+        args["num_nodes"] = 1
 
     if use_wandb:
-        wandb_project = os.environ['WANDB_PROJECT']
-        logger = WandbLogger(project=wandb_project)
+        wandb_project = 'ani-cxx'
+        logger = WandbLogger(project=wandb_project, name=name)
         args['logger'] = logger
 
     trainer = pytorch_lightning.Trainer(**args)
 
     logging.info("Start training")
     trainer.fit(model, datamodule=dataset)
-

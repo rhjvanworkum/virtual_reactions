@@ -1,17 +1,30 @@
-from src.reactions.ma.ma_reaction import MAReaction
-from src.methods.methods import XtbMethod
+# sbatch -N 1 --ntasks-per-node=8 --gres=gpu:2 --partition zen3_0512_a100x2 --qos zen3_0512_a100x2 --output=job_%A.out scripts/submit_vr_training.sh
 
-import pandas as pd
+# sbatch -N 1 --ntasks-per-node=16 --gres=gpu:2 --partition zen2_0256_a40x2 --qos zen2_0256_a40x2 --output=job_%A.out scripts/submit_vr_training.sh
 
-df = pd.read_csv('./data/datasets/ma/ma_dataset.csv')
+from src.dataset import Dataset
+from src.reactions.eas.eas_dataset import XtbSimulatedEasDataset
+from src.split import HeteroCycleSplit, Split
 
-reaction = MAReaction(
-    substrate_smiles=df['substrates'].values[0],
-    product_smiles=df['products'].values[0],
-    solvent=None,
-    method=XtbMethod(),
-    has_openmm_compatability=False,
-    compute_product_only=False
+random_seed = 420
+
+# dataset = Dataset(
+#     csv_file_path="eas/eas_dataset.csv"
+# )
+# source_data = dataset.load()
+dataset = XtbSimulatedEasDataset(
+    csv_file_path="eas/xtb_simulated_eas.csv",
+)
+source_data = dataset.load(
+    aggregation_mode='low',
+    margin=3 / 627.5
 )
 
-print(reaction._get_transition_state())
+
+dataset_split = HeteroCycleSplit(
+    train_split=0.9,
+    val_split=0.1,
+    transductive=True
+)
+
+_, _, _, _, _ = dataset_split.generate_splits(source_data, random_seed)

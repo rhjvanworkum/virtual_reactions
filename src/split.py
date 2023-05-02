@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Union
 import numpy as np
 import pandas as pd
 import rdkit
@@ -70,8 +70,8 @@ class HeteroCycleSplit(VirtualReactionSplit):
 
     def __init__(
         self,
-        train_split: float = 0.9,
-        val_split: float = 0.1,
+        train_split: Union[float, int] = 0.9,
+        val_split: Union[float, int] = 0.1,
         iid_test_split: float = 0.05,
         virtual_test_split: float = 0.05,
         transductive: bool = True,
@@ -194,8 +194,14 @@ class HeteroCycleSplit(VirtualReactionSplit):
         ])
         data_idxs = np.arange(len(left_over_uids))
         np.random.shuffle(data_idxs)
-        train_idxs = data_idxs[:int(self.train_split * len(left_over_uids))]
-        val_idxs = data_idxs[int(self.train_split * len(left_over_uids)):]
+        if isinstance(self.train_split, float) and isinstance(self.val_split, float):
+            train_idxs = data_idxs[:int(self.train_split * len(left_over_uids))]
+            val_idxs = data_idxs[int(self.train_split * len(left_over_uids)):]
+        elif isinstance(self.train_split, int) and isinstance(self.val_split, int):
+            train_idxs = data_idxs[:self.train_split]
+            val_idxs = data_idxs[self.train_split:(self.train_split + self.val_split)]
+        else:
+            raise ValueError("train split & val split must be of same instance int or float")
 
         train_set_uids = left_over_uids[train_idxs]
         val_set_uids = left_over_uids[val_idxs]

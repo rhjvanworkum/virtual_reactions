@@ -22,14 +22,20 @@ from src.task import SimulatedAtomisticTask, SimulatedModelOutput
 
 
 if __name__ == "__main__":
-    name = 'cc_5_dft_100_big'
-    data_path = './data/experiment_1/cc_dft_dataset.db'
+    # name = 'cc_5_dft_100_big'
+    # data_path = './data/experiment_1/cc_dft_dataset.db'
+    # save_path = f"./data/experiment_1/models/{name}.pt"
+    # split_file = './data/experiment_1/splits/cc_5_dft_100.npz'
+    # has_virtual_reactions = True
+
+    name = 'cc_5_surrogate'
+    data_path = './data/experiment_1/cc_surrogate_dataset.db'
     save_path = f"./data/experiment_1/models/{name}.pt"
-    split_file = './data/experiment_1/splits/cc_5_dft_100.npz'
+    split_file = './data/experiment_1/splits/cc_5_surrogate.npz'
     has_virtual_reactions = True
      
     lr = 1e-4
-    batch_size = 32
+    batch_size = 16
     cutoff = 5.0
     n_radial = 64
     n_atom_basis = 128
@@ -37,7 +43,7 @@ if __name__ == "__main__":
 
     use_wandb = True
     epochs = 200
-    n_devices = 1
+    n_devices = 2
 
 
     if torch.cuda.is_available():
@@ -137,11 +143,12 @@ if __name__ == "__main__":
         'callbacks': callbacks,
         'default_root_dir': './test/',
         'max_epochs': epochs,
-        'devices': n_devices
+        'devices': [0,1]
     }
 
     if torch.cuda.is_available():
-        args['accelerator'] = 'gpu'
+        args["accelerator"] = "cuda"
+        args["num_nodes"] = 1
 
     if use_wandb:
         wandb_project = 'ani-cxx'
