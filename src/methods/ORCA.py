@@ -1,25 +1,39 @@
-from typing import Any, List
+from typing import Any, List, Literal
 
-from autode import Molecule, Atom, Calculation
+import autode as ade
+from autode.utils import work_in_tmp_dir
+from autode.wrappers.ORCA import ORCA
 
 def orca(
     molecule: Any,
-    keywords: List[str],
+    job: Literal["sp", "opt"] = "sp",
     conformer_idx: int = 0,
-    solvent: str = 'Methanol',
     functional: str = 'B3LYP',
     basis_set: str = '6-31g',
-    n_cores: int = 4
+    n_cores: int = 1
 ):
-    orca_method = ORCA()
+    ade.Config.n_cores = n_cores
+    ade.Config.ORCA.path = "/home/rhjvanworkum/orca/orca"
+    ade.Config.ORCA.keywords.sp = [
+        functional, basis_set
+    ]   
+    ade.Config.ORCA.keywords.opt = [
+        functional, basis_set
+    ]
 
-    keywords = OptKeywords()
-
-    mol = molecule.to_autode_mol(conformer_idx=conformer_idx)
-    calc = Calculation(
-        name=f'{mol.name}-Calc',
-        molecule=mol,
-        method=orca_method,
-        keywords=keywords,
+    @work_in_tmp_dir(
+        filenames_to_copy=[],
+        kept_file_exts=(),
     )
-    calc.run()
+    def compute():
+        ade_species = molecule.to_autode_mol(conformer_idx=conformer_idx)
+        
+        if job == "sp":
+            ade_species.single_point(method=ORCA())
+            return ade_species.energy, ade_species.partial_charges
+        elif job == "opt":
+            ade_species.optimise(method=ORCA())
+            return ade_species.coordinates
+
+    
+    return compute()
