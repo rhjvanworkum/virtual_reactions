@@ -9,13 +9,15 @@ except ImportError:
 
 import time
 
-from typing import List
+from typing import List, Optional
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+from src.methods.ORCA import orca
 from src.methods.XTB import run_xtb
 import numpy as np
 from operator import itemgetter
 
 import autode as ade
+from autode.atoms import Atom as AutodeAtom
 
 import rdkit
 from rdkit import Chem
@@ -76,11 +78,13 @@ class Compound:
         self,
         rdkit_mol: Chem.Mol,
         has_openmm_compatability: bool = False,
-        mult: int = 0
+        mult: int = 1,
+        solvent: Optional[str] = None
     ) -> None:
         self.rdkit_mol = rdkit_mol
         self.charge = Chem.rdmolops.GetFormalCharge(self.rdkit_mol)
         self.mult = mult
+        self.solvent = solvent
 
         self.conformers = []
 
@@ -119,10 +123,11 @@ class Compound:
         return ade.Species(
             name=str(time.time()),
             atoms=[
-                Atom(atomic_symbol=atom.atomic_symbol, x=atom.x, y=atom.y, z=atom.z) for atom in self.conformers[conformer_idx]
+                AutodeAtom(atomic_symbol=atom.atomic_symbol, x=atom.x, y=atom.y, z=atom.z) for atom in self.conformers[conformer_idx]
             ],
             charge=self.charge,
-            mult=self.mult
+            mult=self.mult,
+            solvent_name=self.solvent
         )
 
     def _set_openmm_conformers(self):
@@ -170,7 +175,7 @@ class Compound:
     ):
         keywords = ['--opt']
         method = 'ff'
-        solvent = 'Methanol'
+        solvent = self.solvent
         xcontrol_file = None
 
         xtb_arguments = [
@@ -199,26 +204,97 @@ class Compound:
             if self.has_openmm_compatability:
                 self._set_openmm_conformers()
 
+    def optimize_lowest_conformer(
+        self,
+        num_cpu: int = 4
+    ):
+        keywords = ['--opt']
+        method = '2'
+        solvent = self.solvent
+        xcontrol_file = None
+
+        xtb_arguments = [
+            (self, keywords, idx, method, solvent, xcontrol_file) for idx in range(len(self.conformers))
+        ]
+
+        with ProcessPoolExecutor(max_workers=num_cpu) as executor:
+            results = executor.map(run_xtb, xtb_arguments)
+
+        energies, geometries = [], []
+        for result in results:
+            energy, geometry = result
+            if energy is not None and geometry is not None:
+                energies.append(energy)
+                geometries.append(geometry)
+
+        if len(energies) > 0:
+            best_conformer = geometries[np.argmin(energies)]
+            self.conformers = [best_conformer]
+        else:
+            self.conformers = []
+
+        if self.has_openmm_compatability:
+            self._set_openmm_conformers()        
+
+
     def compute_fukui_indices(
         self
     ):
-        indices = []
-        for idx in range(len(self.conformers)):
-            indices.append(
-                compute_fukui_indices(
-                    molecule=self,
-                    keywords=['--opt'],
-                    conformer_idx=idx
-                )
-            )
+        # 1. do geom opt
+        coords = orca(
+            molecule=self,
+            job="opt",
+            conformer_idx=0
+        )
+        new_conf = [
+            Atom(atomic_symbol=a.atomic_symbol, 
+                 x=coords[i, 0],
+                 y=coords[i, 1],
+                 z=coords[i, 2]) for i, a in enumerate(self.conformers[0])
+        ]
+        self.conformers = [new_conf]
         
-        mean_indices = []
-        for idx in range(len(indices[0])):
-            mean_indices.append(
-                (
-                    np.mean(np.array([idxs[idx][0] for idxs in indices])),
-                    np.mean(np.array([idxs[idx][1] for idxs in indices])),
-                    np.mean(np.array([idxs[idx][2] for idxs in indices]))
-                )
-            )
-        return mean_indices
+        # 2. do sp on radical anion -> elec parr fn
+        self.charge, self.mult = -1, 2
+        _, elec_parr_idxs = orca(
+            molecule=self,
+            job="sp",
+            conformer_idx=0
+        )
+
+        # 3. do sp on radical cation -> nuc parr fn
+        self.charge, self.mult = 1, 2
+        _, nuc_parr_idxs = orca(
+            molecule=self,
+            job="sp",
+            conformer_idx=0
+        )
+
+        return (elec_parr_idxs, nuc_parr_idxs)
+        
+        # retrieve indices
+
+        # indices = []
+        # for idx in range(len(self.conformers)):
+        #     indices.append(
+        #         compute_fukui_indices(
+        #             molecule=self,
+        #             keywords=['--opt'],
+        #             conformer_idx=idx,
+        #             solvent=self.solvent
+        #         )
+        #     )
+        
+        # if len(indices) == 0:
+        #     return None
+        # else:
+        #     mean_indices = []
+        #     for idx in range(len(indices[0])):
+        #         mean_indices.append(
+        #             (
+        #                 np.mean(np.array([idxs[idx][0] for idxs in indices])),
+        #                 np.mean(np.array([idxs[idx][1] for idxs in indices])),
+        #                 np.mean(np.array([idxs[idx][2] for idxs in indices]))
+        #             )
+        #         )
+        #     return mean_indices

@@ -1,7 +1,9 @@
-from typing import Tuple, List, Union, Any
+from typing import Literal, Optional, Tuple, List, Union, Any
 import numpy as np
+import pandas as pd
 from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor
+from src.compound import Compound
 
 from src.dataset import SimulatedDataset, Dataset
 from src.methods.methods import XtbMethod
@@ -77,3 +79,114 @@ class XtbSimulatedDADataset(SimulatedDADataset):
         with ProcessPoolExecutor(max_workers=n_cpus) as executor:
             results = list(tqdm(executor.map(compute_da_conformer_energies, arguments), total=len(arguments)))
         return results
+    
+
+import rdkit
+from rdkit import Chem
+da_mol_pattern = Chem.MolFromSmiles("C1=CCCCC1")
+
+def get_idxs(args):
+    smiles, solvent = args
+    mol = Compound.from_smiles(smiles, solvent=solvent)
+    mol.generate_conformers()
+    mol.optimize_lowest_conformer()
+    idxs = mol.compute_fukui_indices()
+    return idxs
+    # if idxs is None:
+    #     return None
+    # else:
+    #     elec_idxs = np.array([idx[0] for idx in idxs])
+    #     nuc_idxs = np.array([idx[1] for idx in idxs])
+        
+    #     react_atom_idxs = mol.rdkit_mol.GetSubstructMatch(da_mol_pattern)
+        
+    #     diff = 0
+    #     for atom_idx in react_atom_idxs:
+    #         diff += (nuc_idxs[atom_idx] - elec_idxs[atom_idx])**2
+    #     return diff
+
+class FukuiSimulatedDADataset(Dataset):
+
+    def __init__(
+        self, 
+        csv_file_path: str, 
+    ) -> None:
+        super().__init__(
+            csv_file_path=csv_file_path, 
+        )
+
+    def generate(
+        self,
+        source_dataset: Dataset,
+        n_cpus: int,
+    ) -> None:
+        source_data = pd.read_csv(source_dataset.csv_file_path)
+
+        uids = []
+        df_reaction_idxs = []
+        df_substrates = []
+        df_products = []
+        index = []
+        simulation_idxs = [] 
+
+        args = [(smi, solvent) for smi, solvent in zip(source_data['products'].values, source_data['solvent'].values)]
+        # args = [(smi, solvent) for smi, solvent in zip(source_data['products'].values, ['Methanol' for _ in range(len(source_data))])]
+        with ProcessPoolExecutor(max_workers=n_cpus) as executor:
+            results = list(tqdm(executor.map(get_idxs, args), total=len(args)))
+        
+        for idx, result in enumerate(results):
+            uids.append(max(source_data['uid'].values) + len(uids) + 1)
+            df_reaction_idxs.append(source_data['reaction_idx'].values[idx])
+            df_substrates.append(source_data['substrates'].values[idx])
+            df_products.append(source_data['products'].values[idx])
+            index.append(result)
+            simulation_idxs.append(1)
+            idx += 1
+
+        df = pd.DataFrame.from_dict({
+            'uid': uids,
+            'reaction_idx': df_reaction_idxs,
+            'substrates': df_substrates,
+            'products': df_products,
+            'index': index,
+            'simulation_idx': simulation_idxs
+        })
+
+        df = pd.concat([source_data, df])
+        df.to_csv(self.csv_file_path)
+
+        self.generated = True
+
+    def load(
+        self,
+        uids: Optional[List[str]] = None
+    ) -> pd.DataFrame:
+        if self.generated:
+            df = pd.read_csv(self.csv_file_path)
+
+            # add labels here
+            source_df = df[df['simulation_idx'] == 0]
+            virtual_df = df[df['simulation_idx'] == 1]
+
+            labels = []
+            for _, row in virtual_df.iterrows():
+                if row['index'] != "None":
+                    index = float(row['index'])
+                    other_indices = [
+                        float(val) if val != "None" else 1000 for val in virtual_df[virtual_df['substrates'] == row['substrates']]['index'].values
+                    ]
+                    label = int(index == min(other_indices))
+                else:
+                    label = int(0)
+
+                labels.append(label)
+            virtual_df['label'] = labels
+
+            df = pd.concat([source_df, virtual_df])
+
+            if uids is not None:
+                return df[df['uid'].isin(uids)]
+            else:
+                return df
+        else:
+            raise ValueError("Dataset is not generated yet!")

@@ -3,7 +3,7 @@
 source env.sh
 
 # generation
-python scripts/datasets/generation/generate_ma_dataset.py
+python scripts/datasets/generation/generate_da_dataset.py
 
 # python scripts/train_chemprop_model.py
 
