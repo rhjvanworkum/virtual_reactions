@@ -2,6 +2,8 @@
 
 source env.sh
 
+export AUTODE_LOG_LEVEL=""
+
 # generation
 python scripts/datasets/generation/generate_da_dataset.py
 

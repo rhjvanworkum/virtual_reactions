@@ -2,6 +2,7 @@ from typing import Literal, Optional, Tuple, List, Union, Any
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import ast
 from concurrent.futures import ProcessPoolExecutor
 from src.compound import Compound
 
@@ -126,6 +127,8 @@ class FukuiSimulatedDADataset(Dataset):
         df_reaction_idxs = []
         df_substrates = []
         df_products = []
+        reaction_smiles = []
+        solvents = []
         index = []
         simulation_idxs = [] 
 
@@ -139,6 +142,8 @@ class FukuiSimulatedDADataset(Dataset):
             df_reaction_idxs.append(source_data['reaction_idx'].values[idx])
             df_substrates.append(source_data['substrates'].values[idx])
             df_products.append(source_data['products'].values[idx])
+            reaction_smiles.append(source_data['reaction_smiles'].values[idx])
+            solvents.append(source_data['solvent'].values[idx])
             index.append(result)
             simulation_idxs.append(1)
             idx += 1
@@ -149,6 +154,8 @@ class FukuiSimulatedDADataset(Dataset):
             'substrates': df_substrates,
             'products': df_products,
             'index': index,
+            'reaction_smiles': reaction_smiles,
+            'solvent': solvents,
             'simulation_idx': simulation_idxs
         })
 
@@ -156,6 +163,57 @@ class FukuiSimulatedDADataset(Dataset):
         df.to_csv(self.csv_file_path)
 
         self.generated = True
+
+    def load_valid(
+        self,
+        uids: Optional[List[str]] = None
+    ) -> pd.DataFrame:
+        if self.generated:
+            df = pd.read_csv(self.csv_file_path)
+
+            source_df = df[df['simulation_idx'] == 0]
+            virtual_df = df[df['simulation_idx'] == 1]
+
+            # filter out failed ones
+            filtered_virtual_df = virtual_df[~virtual_df['index'].isna()]
+            valid_reaction_idxs = []
+            for idx in filtered_virtual_df['reaction_idx'].unique():
+                if len(filtered_virtual_df[filtered_virtual_df['reaction_idx'] == idx]) >= 2:
+                    valid_reaction_idxs.append(idx)
+            filtered_virtual_df = filtered_virtual_df[filtered_virtual_df['reaction_idx'].isin(valid_reaction_idxs)]
+            filtered_source_df = source_df[source_df['reaction_idx'].isin(valid_reaction_idxs)] 
+
+            # now add score here
+            scores = []
+            for idx, row in filtered_virtual_df.iterrows():
+                elec_idxs, nuc_idxs = ast.literal_eval(row['index'])
+                react_atom_idxs = Compound.from_smiles(row['products']).rdkit_mol.GetSubstructMatch(da_mol_pattern)
+                diff = 0
+                for atom_idx in react_atom_idxs:
+                    diff += (nuc_idxs[atom_idx] - elec_idxs[atom_idx])**2
+                scores.append(diff)
+            filtered_virtual_df['score'] = scores
+
+            # now add labels to virtual
+            labels = []
+            for _, row in filtered_virtual_df.iterrows():
+                score = float(row['score'])
+                other_scores = [
+                    float(val) for val in filtered_virtual_df[filtered_virtual_df['substrates'] == row['substrates']]['score'].values
+                ]
+                label = int(score == min(other_scores))
+                labels.append(label)
+            filtered_virtual_df['label'] = labels
+
+            print(len(source_df), len(filtered_source_df), len(filtered_virtual_df))
+            df = pd.concat([filtered_source_df, filtered_virtual_df])
+
+            if uids is not None:
+                return df[df['uid'].isin(uids)]
+            else:
+                return df
+        else:
+            raise ValueError("Dataset is not generated yet!")
 
     def load(
         self,
@@ -170,6 +228,7 @@ class FukuiSimulatedDADataset(Dataset):
 
             labels = []
             for _, row in virtual_df.iterrows():
+                print(row['index'])
                 if row['index'] != "None":
                     index = float(row['index'])
                     other_indices = [

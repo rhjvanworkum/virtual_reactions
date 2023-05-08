@@ -240,37 +240,49 @@ class Compound:
     def compute_fukui_indices(
         self
     ):
-        # 1. do geom opt
-        coords = orca(
-            molecule=self,
-            job="opt",
-            conformer_idx=0
-        )
-        new_conf = [
-            Atom(atomic_symbol=a.atomic_symbol, 
-                 x=coords[i, 0],
-                 y=coords[i, 1],
-                 z=coords[i, 2]) for i, a in enumerate(self.conformers[0])
-        ]
-        self.conformers = [new_conf]
-        
-        # 2. do sp on radical anion -> elec parr fn
-        self.charge, self.mult = -1, 2
-        _, elec_parr_idxs = orca(
-            molecule=self,
-            job="sp",
-            conformer_idx=0
-        )
+        if len(self.conformers) == 0:
+            return None
+        else:
+            # 1. do geom opt
+            try:
+                coords = orca(
+                    molecule=self,
+                    job="opt",
+                    conformer_idx=0
+                )
+                new_conf = [
+                    Atom(atomic_symbol=a.atomic_symbol, 
+                        x=coords[i, 0],
+                        y=coords[i, 1],
+                        z=coords[i, 2]) for i, a in enumerate(self.conformers[0])
+                ]
+                self.conformers = [new_conf]
+            except:
+                return None
+            
+            # 2. do sp on radical anion -> elec parr fn
+            try:
+                self.charge, self.mult = -1, 2
+                _, elec_parr_idxs = orca(
+                    molecule=self,
+                    job="sp",
+                    conformer_idx=0
+                )
+            except:
+                return None
 
-        # 3. do sp on radical cation -> nuc parr fn
-        self.charge, self.mult = 1, 2
-        _, nuc_parr_idxs = orca(
-            molecule=self,
-            job="sp",
-            conformer_idx=0
-        )
+            # 3. do sp on radical cation -> nuc parr fn
+            try:
+                self.charge, self.mult = 1, 2
+                _, nuc_parr_idxs = orca(
+                    molecule=self,
+                    job="sp",
+                    conformer_idx=0
+                )
+            except:
+                return None
 
-        return (elec_parr_idxs, nuc_parr_idxs)
+            return (elec_parr_idxs, nuc_parr_idxs)
         
         # retrieve indices
 
