@@ -2,17 +2,21 @@
 
 # sbatch -N 1 --ntasks-per-node=16 --gres=gpu:2 --partition zen2_0256_a40x2 --qos zen2_0256_a40x2 --output=job_%A.out scripts/submit_vr_training.sh
 
-from src.reactions.da.da_dataset import FukuiSimulatedDADataset
+from src.reactions.da.da_dataset import FukuiSimulatedDADataset, XtbSimulatedDADataset
 from sklearn.metrics import roc_auc_score
 import pandas as pd
 
 
 
 ds = FukuiSimulatedDADataset(
-    csv_file_path='da/fukui_simulated_DA_regio_orca_solvent.csv'
+    csv_file_path='da/fukui_simulated_DA_regio_orca_solvent_B3LYP_6-31G.csv'
 )
-
 df = ds.load_valid()
+
+# ds = XtbSimulatedDADataset(
+#     csv_file_path="da/xtb_DA_regio_orca_solvent_tight.csv"
+# )
+# df = ds.load(margin=0 / 627.5)
 
 right = 0
 targets, preds = [], []

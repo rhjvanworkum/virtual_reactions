@@ -5,7 +5,8 @@ source env.sh
 export AUTODE_LOG_LEVEL=""
 
 # generation
-python scripts/datasets/generation/generate_da_dataset.py
+python scripts/datasets/generation/generate_da_dataset.py 
+# --functional B3LYP --basis_set 6-31G  --name fukui_simulated_DA_regio_orca_solvent_B3LYP_6-31G
 
 # python scripts/train_chemprop_model.py
 

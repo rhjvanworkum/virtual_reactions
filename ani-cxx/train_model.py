@@ -27,19 +27,22 @@ if __name__ == "__main__":
     # save_path = f"./data/experiment_1/models/{name}.pt"
     # split_file = './data/experiment_1/splits/cc_5_dft_100.npz'
     # has_virtual_reactions = True
+    # n_simulations = 2
 
-    name = 'cc_5_surrogate'
+    name = 'cc_5_surrogate(bigger)_small_reduceLR'
     data_path = './data/experiment_1/cc_surrogate_dataset.db'
     save_path = f"./data/experiment_1/models/{name}.pt"
     split_file = './data/experiment_1/splits/cc_5_surrogate.npz'
     has_virtual_reactions = True
+    n_simulations = 6
      
-    lr = 1e-4
+    lr = 1e-3
     batch_size = 32
     cutoff = 5.0
     n_radial = 64
-    n_atom_basis = 128
+    n_atom_basis = 32
     n_interactions = 3
+    sim_embedding_dim = 256
 
     use_wandb = True
     epochs = 200
@@ -78,7 +81,12 @@ if __name__ == "__main__":
         radial_basis=radial_basis,
         cutoff_fn=spk.nn.CosineCutoff(cutoff)
     )
-    pred_energy = AtomwiseSimulation(n_in=n_atom_basis, output_key='energy')
+    pred_energy = AtomwiseSimulation(
+        n_in=n_atom_basis, 
+        n_simulations=n_simulations,
+        sim_embedding_dim=sim_embedding_dim, 
+        output_key='energy'
+    )
     nnpot = spk.model.NeuralNetworkPotential(
         representation=schnet,
         input_modules=[pairwise_distance],
@@ -102,7 +110,12 @@ if __name__ == "__main__":
         model=nnpot,
         outputs=[output],
         optimizer_cls=torch.optim.Adam,
-        optimizer_args={"lr": lr}
+        optimizer_args={"lr": lr},
+        scheduler_cls=torch.optim.lr_scheduler.ReduceLROnPlateau,
+        scheduler_args={'threshold': 1e-3, 'patience': 5, 'factor': 0.5},
+        # scheduler_cls=NoamLR,
+        # scheduler_args={'warmup_steps': 25},
+        scheduler_monitor='val_loss'
     )
 
 
@@ -128,14 +141,14 @@ if __name__ == "__main__":
             model_path=save_path
         ),
         pytorch_lightning.callbacks.LearningRateMonitor(
-        logging_interval="epoch"
+            logging_interval="epoch"
         ),
         pytorch_lightning.callbacks.EarlyStopping(
-        monitor="val_loss", 
-        min_delta=1e-4, 
-        patience=10, 
-        verbose=False, 
-        mode="min"
+            monitor="val_loss", 
+            min_delta=1e-4, 
+            patience=10, 
+            verbose=False, 
+            mode="min"
         )
     ]
 

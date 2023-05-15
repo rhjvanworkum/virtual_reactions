@@ -1,8 +1,10 @@
+import os
 import h5py as h5
 import numpy as np
-import math
+from typing import List, Dict
 from ase import Atoms
 from schnetpack.data import ASEAtomsData
+import yaml
 
 
 ANI_DATASET_FILE_PATH = "/home/ruard/Documents/datasets/ani1x-release.h5"
@@ -11,16 +13,12 @@ DFT_ENERGY_KEY = "wb97x_dz.energy"
 DFT_FORCES_KEY = "wb97x_dz.forces"
 Z_KEY = "atomic_numbers"
 R_KEY = "coordinates"
-
 KCAL_MOL_HARTREE = 627.5096
 
+# ani dataset
+ani_dataset = h5.File(ANI_DATASET_FILE_PATH)
 
-if __name__ == "__main__":
-    train_split, val_split = 0.9, 0.1
-
-    # ani dataset
-    ani_dataset = h5.File(ANI_DATASET_FILE_PATH)
-
+def get_cc_available_data() -> Dict[str, List[int]]:
     # geom idxs of every mol for which CC data is available
     cc_mol_geom_idx = {}
     for key in ani_dataset.keys():
@@ -31,125 +29,108 @@ if __name__ == "__main__":
         cc_idxs.sort()
         cc_mol_geom_idx[key] = cc_idxs
 
-    # let's select 10k datasamples for our custom dataset
-    n_datapoints = 0
-    custom_dataset = {}
-    while n_datapoints < 1e4:
-        key = list(cc_mol_geom_idx.keys())[int(np.random.random() * len(cc_mol_geom_idx.keys()))]
-        if key not in custom_dataset.keys():
-            custom_dataset[key] = cc_mol_geom_idx[key]
-            n_datapoints += len(cc_mol_geom_idx[key])
+    return cc_mol_geom_idx
 
-    print(f"No. of Molecules: {len(custom_dataset.keys())}")
-    print(f"No. of geometries: {sum([len(custom_dataset[k]) for k in custom_dataset.keys()])}")
-
-    # let's select 10% of the molecules as OOD test set
-    ood_molecules = []
-    while len(ood_molecules) <= math.floor(0.1 * len(custom_dataset.keys())):
-        key = list(custom_dataset.keys())[int(np.random.random() * len(custom_dataset.keys()))]
-        if key not in ood_molecules:
-            ood_molecules.append(key)
-
-    train_dataset = {k: v for k, v in custom_dataset.items() if k not in ood_molecules}
-    test_dataset = {k: v for k, v in custom_dataset.items() if k in ood_molecules}
-    print(f"No. of train Molecules: {len(train_dataset.keys())}")
-    print(f"No. of train geometries: {sum([len(train_dataset[k]) for k in train_dataset.keys()])}")
-    print(f"No. of test Molecules: {len(test_dataset.keys())}")
-    print(f"No. of test geometries: {sum([len(test_dataset[k]) for k in test_dataset.keys()])}")
-
-    def get_cc_data(key, idx):
+def get_cc_atoms(molecule_name, geom_idx):
         atoms = Atoms(
-            numbers=ani_dataset[key][Z_KEY][:],
-            positions=ani_dataset[key][R_KEY][:][idx, ...]
+            numbers=ani_dataset[molecule_name][Z_KEY][:],
+            positions=ani_dataset[molecule_name][R_KEY][:][geom_idx, ...]
         )
         # CC - "experiment"
         properties = {
-            'energy': np.array([ani_dataset[key][CC_ENERGY_KEY][:][idx]]) / KCAL_MOL_HARTREE,
+            'energy': np.array([ani_dataset[molecule_name][CC_ENERGY_KEY][:][geom_idx]]) / KCAL_MOL_HARTREE,
             'simulation_idx': np.array([0])
         }
         return atoms, properties
 
-    def get_dft_data(key, idx):
-        atoms = Atoms(
-            numbers=ani_dataset[key][Z_KEY][:],
-            positions=ani_dataset[key][R_KEY][:][idx, ...]
-        )
-        # DFT - "simulation"
-        properties = {
-            'energy': np.array([ani_dataset[key][DFT_ENERGY_KEY][:][idx]]) / KCAL_MOL_HARTREE,
-            'simulation_idx': np.array([1])
-        }
-        return atoms, properties
+def get_dft_atoms(molecule_name, geom_idx):
+    atoms = Atoms(
+        numbers=ani_dataset[molecule_name][Z_KEY][:],
+        positions=ani_dataset[molecule_name][R_KEY][:][geom_idx, ...]
+    )
+    # DFT - "simulation"
+    properties = {
+        'energy': np.array([ani_dataset[molecule_name][DFT_ENERGY_KEY][:][geom_idx]]) / KCAL_MOL_HARTREE,
+        'simulation_idx': np.array([1])
+    }
+    return atoms, properties
 
-    # create ASE DB
-    atoms_list = []
-    property_list = []
-    for key in train_dataset.keys():
-        for idx in train_dataset[key]:
-            atoms, properties = get_cc_data(key, idx)
-            atoms_list.append(atoms)
-            property_list.append(properties)
+if __name__ == "__main__":
+    name = "experiment_2"
+    N_train_molecules = 5
+    N_test_molecules = 3
 
-    for key in train_dataset.keys():
-        for idx in train_dataset[key]:
-            atoms, properties = get_dft_data(key, idx)
-            atoms_list.append(atoms)
-            property_list.append(properties)
+    save_folder = os.path.join('./data/', name)
+    if not os.path.exists(save_folder):
+        os.makedirs(save_folder)
 
-    for key in test_dataset.keys():
-        for idx in test_dataset[key]:
-            atoms, properties = get_cc_data(key, idx)
-            atoms_list.append(atoms)
-            property_list.append(properties)
+    # get Coupled Cluster data
+    coupled_cluster_data_dict = get_cc_available_data()
 
+    # select roughly the largest available geometry data mols
+    cc_mol_len = {k: len(v) for k, v in coupled_cluster_data_dict.items()}
+    sorted_keys = sorted(cc_mol_len, key=cc_mol_len.get)
+    ood_test_mols = sorted_keys[-N_test_molecules:]
+    train_mols = sorted_keys[-(N_train_molecules + N_test_molecules):-N_test_molecules]    
+    
+    atoms = []
+    properties = []
+    i = 0
+    idxs = {
+        'train': {i: {'cc': [], 'dft': []} for i in range(len(train_mols))},
+        'test': {i: [] for i in range(len(ood_test_mols))},
+    }
+
+    # add CC_data
+    for mol_idx, mol in enumerate(train_mols):
+        idxs = coupled_cluster_data_dict[mol]
+        for idx in idxs:
+            atom, property = get_cc_atoms(mol, idx)
+            atoms.append(atom)
+            properties.append(property)
+
+            idxs['train'][mol_idx]['cc'].append(i)
+            i += 1
+    n_cc_datapoints = len(atoms)
+
+    # get DFT data
+    for mol in train_mols:
+        idxs = coupled_cluster_data_dict[mol]
+        for idx in idxs:
+            atom, property = get_dft_atoms(mol, idx)
+            atoms.append(atom)
+            properties.append(property)
+
+            idxs['train'][mol_idx]['dft'].append(i)
+            i += 1
+    n_dft_datapoints = len(atoms) - n_cc_datapoints
+
+    # add the test data
+    for mol in ood_test_mols:
+        idxs = coupled_cluster_data_dict[mol]
+        for idx in idxs:
+            atom, property = get_cc_atoms(mol, idx)
+            atoms.append(atom)
+            properties.append(property)
+
+            idxs['test'][mol_idx].append(i)
+            i += 1
+    n_test_datapoints = len(atoms) - n_dft_datapoints - n_cc_datapoints
+
+    assert n_cc_datapoints + n_dft_datapoints + n_test_datapoints == len(atoms)
+    
+    # save db
     dataset = ASEAtomsData.create(
-        './10k_dataset.db',
+        os.path.join(save_folder, 'dataset.db'),
         distance_unit='Ang',
         property_unit_dict={'energy':'kcal/mol', 'simulation_idx': ''}
     )
-    dataset.add_systems(property_list, atoms_list)
+    dataset.add_systems(properties, atoms)
 
-    # get split idxs
-    training_data_idxs = np.arange(sum([len(train_dataset[k]) for k in train_dataset.keys()]))
-    cc_training_data_idxs = training_data_idxs[:int(len(training_data_idxs) // 2)]
-    dft_training_data_idxs = training_data_idxs[int(len(training_data_idxs) // 2):]
-    ood_test_idxs = np.arange(len(training_data_idxs), len(training_data_idxs) + sum([len(test_dataset[k]) for k in test_dataset.keys()]))
-    assert len(cc_training_data_idxs) + len(dft_training_data_idxs) == len(training_data_idxs)
-    assert len(training_data_idxs) + len(ood_test_idxs) == sum([len(custom_dataset[k]) for k in custom_dataset.keys()])
-    assert sum([property_list[idx]['simulation_idx'][0] for idx in cc_training_data_idxs]) == 0
-
-    # Split 1) 100% CC + 100% DFT
-    np.random.shuffle(training_data_idxs)
-    train_idxs = training_data_idxs[:int(train_split * len(training_data_idxs))]
-    val_idxs = training_data_idxs[int(train_split * len(training_data_idxs)):]
-    np.savez('split_cc_100_dft_100.npz', train_idx=train_idxs, val_idx=val_idxs, test_idx=ood_test_idxs)
-
-    # Split 2) 100% CC
-    np.random.shuffle(cc_training_data_idxs)
-    train_idxs = cc_training_data_idxs[:int(train_split * len(cc_training_data_idxs))]
-    val_idxs = cc_training_data_idxs[int(train_split * len(cc_training_data_idxs)):]
-    np.savez('split_cc_100.npz', train_idx=train_idxs, val_idx=val_idxs, test_idx=ood_test_idxs)
-
-    # Split 3) 10% CC
-    np.random.shuffle(cc_training_data_idxs)
-    idxs = cc_training_data_idxs[:int(0.1 * len(cc_training_data_idxs))]
-    train_idxs = idxs[:int(train_split * len(idxs))]
-    val_idxs = idxs[int(train_split * len(idxs)):]
-    np.savez('split_cc_10.npz', train_idx=train_idxs, val_idx=val_idxs, test_idx=ood_test_idxs)
-
-    # Split 4) 100% DFT
-    np.random.shuffle(dft_training_data_idxs)
-    train_idxs = dft_training_data_idxs[:int(train_split * len(dft_training_data_idxs))]
-    val_idxs = dft_training_data_idxs[int(train_split * len(dft_training_data_idxs)):]
-    np.savez('split_dft_100.npz', train_idx=train_idxs, val_idx=val_idxs, test_idx=ood_test_idxs)
-
-    # Split 5) 10% CC + 100% DFT
-    np.random.shuffle(dft_training_data_idxs)
-    np.random.shuffle(cc_training_data_idxs)
-    idx = np.concatenate([
-        cc_training_data_idxs[:int(0.1 * len(cc_training_data_idxs))],
-        dft_training_data_idxs
-    ])
-    train_idxs = idxs[:int(train_split * len(idxs))]
-    val_idxs = idxs[int(train_split * len(idxs)):]
-    np.savez('split_cc_10_dft_100.npz', train_idx=train_idxs, val_idx=val_idxs, test_idx=ood_test_idxs)
+    # save splits
+    if not os.path.exists(os.path.join(save_folder, 'splits/')):
+        os.makedirs(os.path.join(save_folder, 'splits/'))
+    if not os.path.exists(os.path.join(save_folder, 'splits/mol_splits/')):
+        os.makedirs(os.path.join(save_folder, 'splits/mol_splits/'))
+    with open(os.path.join(save_folder, 'splits/split.yaml'), 'w') as yaml_file:
+        yaml.dump(idxs, yaml_file, default_flow_style=False)

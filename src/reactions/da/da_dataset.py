@@ -34,7 +34,7 @@ class SimulatedDADataset(SimulatedDataset):
 
         return source_data['substrates'].values, \
                source_data['products'].values, \
-               [None for _ in range(len(substrates))], \
+               source_data['solvent'].values, \
                compute_substrate_only_list, \
                source_data['reaction_idx'].values
     
@@ -84,14 +84,17 @@ class XtbSimulatedDADataset(SimulatedDADataset):
 
 import rdkit
 from rdkit import Chem
+
 da_mol_pattern = Chem.MolFromSmiles("C1=CCCCC1")
+diene_mol_pattern = Chem.MolFromSmarts("[C,c][C,c]=[C,c][C,c]")
+dienophile_mol_pattern = Chem.MolFromSmarts("[C,c][C,c]")
 
 def get_idxs(args):
-    smiles, solvent = args
-    mol = Compound.from_smiles(smiles, solvent=solvent)
+    smiles, solvent, functional, basis_set = args
+    mol = Compound.from_smiles(smiles, solvent=None)
     mol.generate_conformers()
     mol.optimize_lowest_conformer()
-    idxs = mol.compute_fukui_indices()
+    idxs = mol.compute_fukui_indices(functional, basis_set)
     return idxs
     # if idxs is None:
     #     return None
@@ -105,6 +108,32 @@ def get_idxs(args):
     #     for atom_idx in react_atom_idxs:
     #         diff += (nuc_idxs[atom_idx] - elec_idxs[atom_idx])**2
     #     return diff
+
+def get_da_reacting_atoms(mol: Chem.Mol) -> Tuple[int]:
+    return mol.GetSubstructMatch(da_mol_pattern)
+
+def get_da_reacting_atoms_sub(mol: Chem.Mol) -> Tuple[Tuple[int]]:
+    da_atoms = mol.GetSubstructMatch(da_mol_pattern)
+
+    diene_atoms = None
+    diene_matches = mol.GetSubstructMatches(diene_mol_pattern)
+    for match in diene_matches:
+        if set(match).issubset(set(da_atoms)):
+            diene_atoms = match
+            break
+
+    dienophile_atoms = None
+    dienophile_matches = mol.GetSubstructMatches(dienophile_mol_pattern)
+    for match in dienophile_matches:
+        if set(match).issubset(set(da_atoms)) and not set(match).intersection(set(diene_atoms)):
+            dienophile_atoms = match
+            break
+    
+    # try:
+    #     print(diene_atoms, dienophile_atoms)
+    # except:
+    #     print(Chem.MolToSmiles(mol))
+    return diene_atoms, dienophile_atoms
 
 class FukuiSimulatedDADataset(Dataset):
 
@@ -120,6 +149,8 @@ class FukuiSimulatedDADataset(Dataset):
         self,
         source_dataset: Dataset,
         n_cpus: int,
+        functional: str,
+        basis_set: str
     ) -> None:
         source_data = pd.read_csv(source_dataset.csv_file_path)
 
@@ -132,7 +163,7 @@ class FukuiSimulatedDADataset(Dataset):
         index = []
         simulation_idxs = [] 
 
-        args = [(smi, solvent) for smi, solvent in zip(source_data['products'].values, source_data['solvent'].values)]
+        args = [(smi, solvent, functional, basis_set) for smi, solvent in zip(source_data['products'].values, source_data['solvent'].values)]
         # args = [(smi, solvent) for smi, solvent in zip(source_data['products'].values, ['Methanol' for _ in range(len(source_data))])]
         with ProcessPoolExecutor(max_workers=n_cpus) as executor:
             results = list(tqdm(executor.map(get_idxs, args), total=len(args)))
@@ -187,10 +218,19 @@ class FukuiSimulatedDADataset(Dataset):
             scores = []
             for idx, row in filtered_virtual_df.iterrows():
                 elec_idxs, nuc_idxs = ast.literal_eval(row['index'])
-                react_atom_idxs = Compound.from_smiles(row['products']).rdkit_mol.GetSubstructMatch(da_mol_pattern)
+                
+                # mol = Compound.from_smiles(row['products']).rdkit_mol
+                # react_atom_idxs = get_da_reacting_atoms(mol)
+                # diff = 0
+                # for atom_idx in react_atom_idxs:
+                #     diff += (elec_idxs[atom_idx] - nuc_idxs[atom_idx])**2
+                
+                mol = Compound.from_smiles(row['products']).rdkit_mol
+                diene_atoms, dienophile_atoms = get_da_reacting_atoms_sub(mol)
                 diff = 0
-                for atom_idx in react_atom_idxs:
-                    diff += (nuc_idxs[atom_idx] - elec_idxs[atom_idx])**2
+                if diene_atoms is not None and dienophile_atoms is not None:
+                    diff = sum([(elec_idxs[i] - nuc_idxs[i])**2 for i in diene_atoms]) / sum([(elec_idxs[i] - nuc_idxs[i])**2 for i in dienophile_atoms])
+
                 scores.append(diff)
             filtered_virtual_df['score'] = scores
 

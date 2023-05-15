@@ -9,7 +9,7 @@ def orca(
     job: Literal["sp", "opt"] = "sp",
     conformer_idx: int = 0,
     functional: str = 'B3LYP',
-    basis_set: str = '6-31G',
+    basis_set: str = 'def2-SVP',
     n_cores: int = 1
 ):
     ade.Config.n_cores = n_cores

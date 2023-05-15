@@ -9,6 +9,4 @@
 export NCCL_DEBUG=INFO
 export PYTHONFAULTHANDLER=1
 
-conda activate schnetpack
-
 python train_model.py

@@ -36,6 +36,8 @@ class AtomwiseSimulation(nn.Module):
         self,
         n_in: int,
         n_out: int = 1,
+        n_simulations: int = 2,
+        sim_embedding_dim: int = 256,
         n_hidden: Optional[Union[int, Sequence[int]]] = None,
         n_layers: int = 2,
         activation: Callable = F.silu,
@@ -70,11 +72,11 @@ class AtomwiseSimulation(nn.Module):
             )
         
         self.embedding = torch.nn.Embedding(
-            num_embeddings=2,
-            embedding_dim=8,
+            num_embeddings=n_simulations,
+            embedding_dim=sim_embedding_dim,
         )
         self.embedding_network = spk.nn.build_mlp(
-            n_in=8,
+            n_in=sim_embedding_dim,
             n_out=n_in,
             n_hidden=n_in // 2,
             n_layers=2,

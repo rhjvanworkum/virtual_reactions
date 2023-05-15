@@ -238,7 +238,9 @@ class Compound:
 
 
     def compute_fukui_indices(
-        self
+        self,
+        functional,
+        basis_set
     ):
         if len(self.conformers) == 0:
             return None
@@ -248,7 +250,9 @@ class Compound:
                 coords = orca(
                     molecule=self,
                     job="opt",
-                    conformer_idx=0
+                    conformer_idx=0,
+                    functional=functional,
+                    basis_set=basis_set
                 )
                 new_conf = [
                     Atom(atomic_symbol=a.atomic_symbol, 
