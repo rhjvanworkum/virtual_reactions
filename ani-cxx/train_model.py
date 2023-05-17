@@ -22,27 +22,27 @@ from src.task import SimulatedAtomisticTask, SimulatedModelOutput
 
 
 if __name__ == "__main__":
-    # name = 'cc_5_dft_100_big'
-    # data_path = './data/experiment_1/cc_dft_dataset.db'
-    # save_path = f"./data/experiment_1/models/{name}.pt"
-    # split_file = './data/experiment_1/splits/cc_5_dft_100.npz'
+    # name = 'cc_5_mol_sim_10_smaller'
+    # data_path = './data/experiment_2/surrogate_dataset.db'
+    # save_path = f"./data/experiment_2/models/{name}.pt"
+    # split_file = './data/experiment_2/splits/cc_5_mol_sim_10.npz'
     # has_virtual_reactions = True
-    # n_simulations = 2
+    # n_simulations = 6
 
-    name = 'cc_5_surrogate(bigger)_small_reduceLR'
-    data_path = './data/experiment_1/cc_surrogate_dataset.db'
-    save_path = f"./data/experiment_1/models/{name}.pt"
-    split_file = './data/experiment_1/splits/cc_5_surrogate.npz'
+    name = 'cc_5_mol_sim_10_smaller_large_sim'
+    data_path = './data/experiment_2/surrogate_dataset.db'
+    save_path = f"./data/experiment_2/models/{name}.pt"
+    split_file = './data/experiment_2/splits/cc_5_mol_sim_10.npz'
     has_virtual_reactions = True
     n_simulations = 6
      
     lr = 1e-3
     batch_size = 32
     cutoff = 5.0
-    n_radial = 64
-    n_atom_basis = 32
+    n_radial = 16
+    n_atom_basis = 16
     n_interactions = 3
-    sim_embedding_dim = 256
+    sim_embedding_dim = 32
 
     use_wandb = True
     epochs = 200
@@ -112,7 +112,7 @@ if __name__ == "__main__":
         optimizer_cls=torch.optim.Adam,
         optimizer_args={"lr": lr},
         scheduler_cls=torch.optim.lr_scheduler.ReduceLROnPlateau,
-        scheduler_args={'threshold': 1e-3, 'patience': 5, 'factor': 0.5},
+        scheduler_args={'threshold': 1e-4, 'patience': 5, 'factor': 0.5},
         # scheduler_cls=NoamLR,
         # scheduler_args={'warmup_steps': 25},
         scheduler_monitor='val_loss'
@@ -145,8 +145,8 @@ if __name__ == "__main__":
         ),
         pytorch_lightning.callbacks.EarlyStopping(
             monitor="val_loss", 
-            min_delta=1e-4, 
-            patience=10, 
+            min_delta=1e-5, 
+            patience=25, 
             verbose=False, 
             mode="min"
         )

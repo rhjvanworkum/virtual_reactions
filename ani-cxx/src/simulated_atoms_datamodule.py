@@ -429,7 +429,7 @@ class SimulatedAtomsDataModule(pl.LightningDataModule):
     def iid_test_dataloader(self) -> AtomsLoader:
         if self._iid_test_dataloader is None:
             self._iid_test_dataloader = AtomsLoader(
-                self.ood_test_dataset,
+                self.iid_test_dataset,
                 batch_size=self.test_batch_size,
                 num_workers=self.num_test_workers,
                 pin_memory=self._pin_memory,
@@ -439,7 +439,7 @@ class SimulatedAtomsDataModule(pl.LightningDataModule):
     def virtual_test_dataloader(self) -> AtomsLoader:
         if self._virtual_test_dataloader is None:
             self._virtual_test_dataloader = AtomsLoader(
-                self.ood_test_dataset,
+                self.virtual_test_dataset,
                 batch_size=self.test_batch_size,
                 num_workers=self.num_test_workers,
                 pin_memory=self._pin_memory,

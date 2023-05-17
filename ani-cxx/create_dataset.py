@@ -7,7 +7,7 @@ from schnetpack.data import ASEAtomsData
 import yaml
 
 
-ANI_DATASET_FILE_PATH = "/home/ruard/Documents/datasets/ani1x-release.h5"
+ANI_DATASET_FILE_PATH = "/home/rhjvanworkum/ani1x-release.h5"
 CC_ENERGY_KEY = "ccsd(t)_cbs.energy"
 DFT_ENERGY_KEY = "wb97x_dz.energy"
 DFT_FORCES_KEY = "wb97x_dz.forces"
@@ -60,6 +60,9 @@ if __name__ == "__main__":
     N_train_molecules = 5
     N_test_molecules = 3
 
+    iid_test_split = 0.05
+    virtual_test_split = 0.05
+
     save_folder = os.path.join('./data/', name)
     if not os.path.exists(save_folder):
         os.makedirs(save_folder)
@@ -76,44 +79,66 @@ if __name__ == "__main__":
     atoms = []
     properties = []
     i = 0
-    idxs = {
+    data_idxs = {
         'train': {i: {'cc': [], 'dft': []} for i in range(len(train_mols))},
-        'test': {i: [] for i in range(len(ood_test_mols))},
+        'ood_test': {i: [] for i in range(len(ood_test_mols))},
+        'iid_test': {i: [] for i in range(len(train_mols))},
+        'virtual_test': {i: [] for i in range(len(train_mols))}
     }
 
     # add CC_data
     for mol_idx, mol in enumerate(train_mols):
-        idxs = coupled_cluster_data_dict[mol]
-        for idx in idxs:
+        idxs = np.array(coupled_cluster_data_dict[mol])
+        np.random.shuffle(idxs)
+        train_idxs = idxs[:int(len(idxs) * (1 - iid_test_split))]
+        iid_test_idxs = idxs[int(len(idxs) * (1 - iid_test_split)):]
+
+        for idx in train_idxs:
             atom, property = get_cc_atoms(mol, idx)
             atoms.append(atom)
             properties.append(property)
+            data_idxs['train'][mol_idx]['cc'].append(i)
+            i += 1
 
-            idxs['train'][mol_idx]['cc'].append(i)
+        for idx in iid_test_idxs:
+            atom, property = get_cc_atoms(mol, idx)
+            atoms.append(atom)
+            properties.append(property)
+            data_idxs['iid_test'][mol_idx].append(i)
             i += 1
     n_cc_datapoints = len(atoms)
 
     # get DFT data
-    for mol in train_mols:
-        idxs = coupled_cluster_data_dict[mol]
-        for idx in idxs:
+    for mol_idx, mol in enumerate(train_mols):
+        idxs = np.array(coupled_cluster_data_dict[mol])
+        np.random.shuffle(idxs)
+        train_idxs = idxs[:int(len(idxs) * (1 - virtual_test_split))]
+        virtual_test_idxs = idxs[int(len(idxs) * (1 - virtual_test_split)):]
+
+        for idx in train_idxs:
             atom, property = get_dft_atoms(mol, idx)
             atoms.append(atom)
             properties.append(property)
+            data_idxs['train'][mol_idx]['dft'].append(i)
+            i += 1
 
-            idxs['train'][mol_idx]['dft'].append(i)
+        for idx in virtual_test_idxs:
+            atom, property = get_dft_atoms(mol, idx)
+            atoms.append(atom)
+            properties.append(property)
+            data_idxs['virtual_test'][mol_idx].append(i)
             i += 1
     n_dft_datapoints = len(atoms) - n_cc_datapoints
 
     # add the test data
-    for mol in ood_test_mols:
+    for mol_idx, mol in enumerate(ood_test_mols):
         idxs = coupled_cluster_data_dict[mol]
         for idx in idxs:
             atom, property = get_cc_atoms(mol, idx)
             atoms.append(atom)
             properties.append(property)
 
-            idxs['test'][mol_idx].append(i)
+            data_idxs['ood_test'][mol_idx].append(i)
             i += 1
     n_test_datapoints = len(atoms) - n_dft_datapoints - n_cc_datapoints
 
@@ -133,4 +158,4 @@ if __name__ == "__main__":
     if not os.path.exists(os.path.join(save_folder, 'splits/mol_splits/')):
         os.makedirs(os.path.join(save_folder, 'splits/mol_splits/'))
     with open(os.path.join(save_folder, 'splits/split.yaml'), 'w') as yaml_file:
-        yaml.dump(idxs, yaml_file, default_flow_style=False)
+        yaml.dump(data_idxs, yaml_file, default_flow_style=False)
