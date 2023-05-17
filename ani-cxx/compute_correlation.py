@@ -13,7 +13,7 @@ def pearson(x, y):
 
 if __name__ == "__main__":
     experiment_name = "experiment_2"
-    name = "dft"
+    name = "mol_sim"
     
     save_folder = os.path.join("data", experiment_name)
 

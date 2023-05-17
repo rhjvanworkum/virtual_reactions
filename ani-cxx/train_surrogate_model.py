@@ -19,25 +19,30 @@ import torchmetrics
 from src.atomwise_simulation import AtomwiseSimulation, SimulationIdxPerAtom
 from src.simulated_atoms_datamodule import SimulatedAtomsDataModule
 from src.task import SimulatedAtomisticTask, SimulatedModelOutput
+from src.lr_schedulers import NoamLR
 
 
 if __name__ == "__main__":
-    name = 'mol3'
-    data_path = './data/experiment_1/cc_dft_dataset.db'
-    save_path = f"./data/experiment_1/models/{name}.pt"
-    split_file = './data/experiment_1/splits/mol_splits/mol3.npz'
+    name = 'mol1_5e-2_small'
+    i = 1
+    data_path = './data/experiment_2/dataset.db'
+    save_path = f"./data/experiment_2/models/{name}.pt"
+    split_file = f'./data/experiment_2/splits/mol_splits/mol_{i}.npz'
     has_virtual_reactions = False
-     
-    lr = 1e-4
+    n_simulations = 2
+
+    lr = 5e-2
     batch_size = 32
     cutoff = 5.0
-    n_radial = 16
-    n_atom_basis = 32
+    n_radial = 8
+    n_atom_basis = 8
     n_interactions = 3
+    sim_embedding_dim = 8
+    n_layers = 3
 
     use_wandb = True
-    epochs = 200
-    n_devices = 2
+    epochs = 300
+    n_devices = 1
 
 
     if torch.cuda.is_available():
@@ -72,7 +77,13 @@ if __name__ == "__main__":
         radial_basis=radial_basis,
         cutoff_fn=spk.nn.CosineCutoff(cutoff)
     )
-    pred_energy = AtomwiseSimulation(n_in=n_atom_basis, output_key='energy')
+    pred_energy = AtomwiseSimulation(
+        n_in=n_atom_basis, 
+        n_simulations=n_simulations,
+        sim_embedding_dim=sim_embedding_dim, 
+        output_key='energy',
+        n_layers=n_layers,
+    )
     nnpot = spk.model.NeuralNetworkPotential(
         representation=schnet,
         input_modules=[pairwise_distance],
@@ -96,7 +107,12 @@ if __name__ == "__main__":
         model=nnpot,
         outputs=[output],
         optimizer_cls=torch.optim.Adam,
-        optimizer_args={"lr": lr}
+        optimizer_args={"lr": lr},
+        scheduler_cls=torch.optim.lr_scheduler.ReduceLROnPlateau,
+        scheduler_args={'threshold': 1e-4, 'patience': 5, 'factor': 0.5},
+        # scheduler_cls=NoamLR,
+        # scheduler_args={'warmup_steps': 25},
+        scheduler_monitor='val_loss'
     )
 
 
@@ -122,14 +138,14 @@ if __name__ == "__main__":
             model_path=save_path
         ),
         pytorch_lightning.callbacks.LearningRateMonitor(
-        logging_interval="epoch"
+            logging_interval="epoch"
         ),
         pytorch_lightning.callbacks.EarlyStopping(
-        monitor="val_loss", 
-        min_delta=1e-6, 
-        patience=30, 
-        verbose=False, 
-        mode="min"
+            monitor="val_loss", 
+            min_delta=1e-7, 
+            patience=25, 
+            verbose=False, 
+            mode="min"
         )
     ]
 

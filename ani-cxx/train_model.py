@@ -29,7 +29,7 @@ if __name__ == "__main__":
     # has_virtual_reactions = True
     # n_simulations = 6
 
-    name = 'cc_5_mol_sim_10_smaller_large_sim'
+    name = 'cc_5_mol_sim_10_smaller'
     data_path = './data/experiment_2/surrogate_dataset.db'
     save_path = f"./data/experiment_2/models/{name}.pt"
     split_file = './data/experiment_2/splits/cc_5_mol_sim_10.npz'
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     n_radial = 16
     n_atom_basis = 16
     n_interactions = 3
-    sim_embedding_dim = 32
+    sim_embedding_dim = 8
 
     use_wandb = True
     epochs = 200

@@ -2,4 +2,4 @@
 
 source env.sh
 
-python scripts/train_chemprop_model.py
+python scripts/train_chemprop_model_2.py
