@@ -1,5 +1,5 @@
 from typing import List
-from src.splits import Split
+from src.data.splits import Split
 
 class VirtualReactionSplit(Split):
 

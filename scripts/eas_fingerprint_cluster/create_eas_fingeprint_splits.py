@@ -3,10 +3,10 @@ This script takes the Jensen EAS dataset, splits it into 5 different DataFrames 
 similarity
 """
 import os
-
 from src.data.datasets.dataset import Dataset
-from src.splits.fingerprint_similarity_split import FingerprintSimilaritySplit
-from src.splits.random_split import RandomSplit
+
+from src.data.datasets.eas.xtb_simulated_eas_dataset import XtbSimulatedEasDataset
+from src.data.splits.fingerprint_similarity_split import FingerprintSimilaritySplit
 
 
 if __name__ == "__main__":

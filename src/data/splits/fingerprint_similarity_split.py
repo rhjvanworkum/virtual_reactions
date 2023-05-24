@@ -1,14 +1,14 @@
 from typing import List, Tuple, Any
 import numpy as np
 import pandas as pd
-from sklearn.cluster import KMeans, MiniBatchKMeans
+from sklearn.cluster import Birch, KMeans, MiniBatchKMeans, SpectralClustering
 from rdkit import Chem
 from rdkit import DataStructs
 from rdkit.ML.Cluster import Butina
 from rdkit.Chem import rdFingerprintGenerator
 
 
-from src.splits import Split
+from src.data.splits import Split
 
 def fingerprint_to_numpy(fp):
     arr = np.zeros((1,), int)
@@ -43,13 +43,7 @@ class FingerprintSimilaritySplit(Split):
         fingerprints = [rdkit_gen.GetFingerprint(mol) for mol in unique_mols]
         fingerprints = [fingerprint_to_numpy(fp) for fp in fingerprints]
 
-        kmeans = KMeans(
-            n_clusters=self.n_clusters, 
-            random_state=random_seed, 
-            n_init="auto"
-        ).fit(fingerprints)
-
-
+        kmeans = Birch(n_clusters=self.n_clusters).fit(fingerprints)
         
         clustered_unique_reactants = {i: [] for i in range(self.n_clusters)}
         for reactants, label in zip(unique_reactants, kmeans.labels_):
@@ -59,5 +53,7 @@ class FingerprintSimilaritySplit(Split):
         for label in range(self.n_clusters):
             new_df = data[data['substrates'].isin(clustered_unique_reactants[label])]
             clustered_data += (new_df,)
+
+        print(f'Cluster sizes: {", ".join([str(len(df)) for df in clustered_data])}')
 
         return clustered_data

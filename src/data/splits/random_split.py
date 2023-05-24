@@ -2,7 +2,7 @@ from typing import Tuple, List
 import pandas as pd
 import numpy as np
 
-from src.splits import Split
+from src.data.splits import Split
 
 
 class RandomSplit(Split):

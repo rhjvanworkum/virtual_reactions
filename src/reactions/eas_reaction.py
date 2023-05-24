@@ -1,10 +1,9 @@
-from typing import Callable, List, Literal, Optional, Union
+from typing import List, Union
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-from src.methods.XTB import xtb
 from src.compound import Compound, Conformation
-from src.methods.methods import Method
+from src.methods import Method
 
 class EASReaction:
     rxns = [

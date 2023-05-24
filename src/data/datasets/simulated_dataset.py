@@ -120,21 +120,6 @@ class SimulatedDataset(Dataset):
                             barrier = None
                     else:
                         raise ValueError("aggregation_mode {aggregation_mode} doesn't exists")
-                elif self.n_substrates == 2:
-                    sub1_energies, sub2_energies, ts_energies = ast.literal_eval(row['conformer_energies'])
-                    sub1_energies = [e for e in sub1_energies if e is not None]
-                    sub2_energies = [e for e in sub2_energies if e is not None]
-                    ts_energies = [e for e in ts_energies if e is not None]
-
-                    if aggregation_mode == 'avg':
-                        barrier = np.mean(np.array(ts_energies)) - (np.mean(np.array(sub1_energies)) + np.mean(np.array(sub2_energies)))
-                    elif aggregation_mode == 'low':
-                        if len(sub1_energies) > 0 and len(sub2_energies) > 0 and len(ts_energies) > 0:
-                            barrier = np.min(np.array(ts_energies)) - (np.min(np.array(sub2_energies)) + np.min(np.array(sub2_energies)))
-                        else:
-                            barrier = None
-                    else:
-                        raise ValueError("aggregation_mode {aggregation_mode} doesn't exists")
                 barriers.append(barrier)
             virtual_dataframe['barrier'] = barriers
 
@@ -169,26 +154,21 @@ class SimulatedDataset(Dataset):
             # aggregate across conformers
             barrier_list = []
             for _, row in dataframe.iterrows():
-                try:
-                    barriers = ast.literal_eval(row['conformer_energies'])
-                except:
-                    barriers = row['conformer_energies'].replace('[', '').replace(']', '').replace('\n', '')
-                    barriers = barriers.split(' ')
-                    barriers = list(filter(lambda x: len(x) > 2, barriers))
-                    barriers = [float(e) for e in barriers]
-                barriers = [e for e in barriers if e is not None]
+                if self.n_substrates == 1:
+                    sub_energies, ts_energies = ast.literal_eval(row['conformer_energies'])
+                    sub_energies = [e for e in sub_energies if e is not None]
+                    ts_energies = [e for e in ts_energies if e is not None]
 
-                if aggregation_mode == 'avg':
-                    barrier = np.mean(barriers)
-                elif aggregation_mode == 'low':
-                    if len(barriers) > 0:
-                        barrier = np.min(barriers)
+                    if aggregation_mode == 'avg':
+                        barrier = np.mean(np.array(ts_energies)) - np.mean(np.array(sub_energies))
+                    elif aggregation_mode == 'low':
+                        if len(sub_energies) > 0 and len(ts_energies) > 0:
+                            barrier = np.min(np.array(ts_energies)) - np.min(np.array(sub_energies))
+                        else:
+                            barrier = None
                     else:
-                        barrier = None
-                else:
-                    raise ValueError("aggregation_mode {aggregation_mode} doesn't exists")
+                        raise ValueError("aggregation_mode {aggregation_mode} doesn't exists")
                 barrier_list.append(barrier)
-
             dataframe['label'] = barrier_list
             dataframe = dataframe[~dataframe['label'].isnull()]
             dataframe = dataframe[~dataframe['label'].isna()]

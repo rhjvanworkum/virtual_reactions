@@ -11,11 +11,11 @@ from openff.toolkit.typing.engines.smirnoff import ForceField
 
 import os
 import numpy as np
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from src.methods.XTB import xtb
-from src.compound import Compound
 
+Compound = Any
 
 class Method:
     def __init__(self) -> None:

@@ -10,8 +10,7 @@ except ImportError:
 import time
 
 from typing import List, Optional
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-from src.methods.ORCA import orca
+from concurrent.futures import ProcessPoolExecutor
 from src.methods.XTB import run_xtb
 import numpy as np
 from operator import itemgetter
@@ -24,9 +23,6 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem.rdPartialCharges import ComputeGasteigerCharges
-from openff.toolkit.topology import Molecule
-from openff.toolkit.typing.engines.smirnoff import ForceField
-from src.methods.fukui import compute_fukui_indices
 
 from src.utils import Atom, EditedRDKitToolkitWrapper, write_xyz_file
 
@@ -202,88 +198,4 @@ class Compound:
 
             self.conformers = best_conformers
             if self.has_openmm_compatability:
-                self._set_openmm_conformers()
-
-    def optimize_lowest_conformer(
-        self,
-        num_cpu: int = 4
-    ):
-        keywords = ['--opt']
-        method = '2'
-        solvent = self.solvent
-        xcontrol_file = None
-
-        xtb_arguments = [
-            (self, keywords, idx, method, solvent, xcontrol_file) for idx in range(len(self.conformers))
-        ]
-
-        with ProcessPoolExecutor(max_workers=num_cpu) as executor:
-            results = executor.map(run_xtb, xtb_arguments)
-
-        energies, geometries = [], []
-        for result in results:
-            energy, geometry = result
-            if energy is not None and geometry is not None:
-                energies.append(energy)
-                geometries.append(geometry)
-
-        if len(energies) > 0:
-            best_conformer = geometries[np.argmin(energies)]
-            self.conformers = [best_conformer]
-        else:
-            self.conformers = []
-
-        if self.has_openmm_compatability:
-            self._set_openmm_conformers()        
-
-
-    def compute_fukui_indices(
-        self,
-        functional,
-        basis_set
-    ):
-        if len(self.conformers) == 0:
-            return None
-        else:
-            # 1. do geom opt
-            try:
-                coords = orca(
-                    molecule=self,
-                    job="opt",
-                    conformer_idx=0,
-                    functional=functional,
-                    basis_set=basis_set
-                )
-                new_conf = [
-                    Atom(atomic_symbol=a.atomic_symbol, 
-                        x=coords[i, 0],
-                        y=coords[i, 1],
-                        z=coords[i, 2]) for i, a in enumerate(self.conformers[0])
-                ]
-                self.conformers = [new_conf]
-            except:
-                return None
-            
-            # 2. do sp on radical anion -> elec parr fn
-            try:
-                self.charge, self.mult = -1, 2
-                _, elec_parr_idxs = orca(
-                    molecule=self,
-                    job="sp",
-                    conformer_idx=0
-                )
-            except:
-                return None
-
-            # 3. do sp on radical cation -> nuc parr fn
-            try:
-                self.charge, self.mult = 1, 2
-                _, nuc_parr_idxs = orca(
-                    molecule=self,
-                    job="sp",
-                    conformer_idx=0
-                )
-            except:
-                return None
-
-            return (elec_parr_idxs, nuc_parr_idxs)
+                self._set_openmm_conformers()   

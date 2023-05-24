@@ -10,7 +10,7 @@ from chemprop.train.cross_validate import cross_validate
 from chemprop.train.run_training import run_training
 
 from src.data.datasets.dataset import Dataset
-from src.splits import Split
+from src.data.splits import Split
 from src.chemprop.train_utils import get_predictions, make_chemprop_training_args, prepare_csv_files_for_chemprop
 
 

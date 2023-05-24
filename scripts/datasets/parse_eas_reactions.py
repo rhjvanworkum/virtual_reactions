@@ -1,6 +1,8 @@
-import pandas as pd
+"""
+Script to parse the EAS dataset
+"""
 
-import rdkit
+import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import AllChem
 

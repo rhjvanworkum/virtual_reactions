@@ -1,13 +1,13 @@
 import os
 import shutil
-from src.chemprop.train import train_and_evaluate_chemprop_model
 
+from src.chemprop.train import train_and_evaluate_chemprop_model
 from src.data.datasets.dataset import Dataset
-from src.splits.random_split import RandomSplit
+from src.data.splits.random_split import RandomSplit
 
 if __name__ == "__main__":
-    split_idx = 4
-    name = f'fingeprint_split_{split_idx}'
+    split_idx = 0
+    name = f'20_pct_fingerprint_split_{split_idx}'
     project = 'vr-fingerprints'
 
     n_replications = 1
@@ -16,9 +16,9 @@ if __name__ == "__main__":
 
     training_args = {
         'hidden_size': 150,
-        'depth': 4,
+        # 'depth': 3
         'epochs': 100,
-        'init_lr': 1e-4,
+        # 'init_lr': 1e-3,
         # 'ffn_hidden_size': 64,
         # 'ffn_num_layers': 3,
     }
@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
 
     dataset = Dataset(
-        csv_file_path=f"eas/fingerprint_splits/split_{split_idx}.csv"
+        csv_file_path=f"eas/20_pct_fingerprint_splits/split_{split_idx}.csv"
     )
     source_data = dataset.load()
 

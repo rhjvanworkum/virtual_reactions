@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from src.data.datasets.dataset import Dataset
-from src.splits import Split
+from src.data.splits import Split
 import numpy as np
 from typing import Dict, List, Callable, Optional
 

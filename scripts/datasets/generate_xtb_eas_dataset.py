@@ -1,6 +1,11 @@
+"""
+Script to generate the Xtb simulated EAS dataset
+"""
+
+
 import os
 from src.data.datasets.dataset import Dataset
-from src.reactions.eas.xtb_eas_dataset import XtbSimulatedEasDataset
+from src.data.datasets.eas.xtb_simulated_eas_dataset import XtbSimulatedEasDataset
 
 n_processes = 14
 

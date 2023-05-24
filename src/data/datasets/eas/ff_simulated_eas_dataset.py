@@ -11,7 +11,7 @@ from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
 from typing import List, Union, Any
 
-from src.data.datasets.eas_datasets import SimulatedEASDataset
+from src.data.datasets.eas import SimulatedEASDataset
 from src.methods import ForceFieldMethod
 from src.reactions.eas_reaction import EASReaction
 
