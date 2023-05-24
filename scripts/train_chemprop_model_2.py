@@ -33,7 +33,7 @@ def train_and_evaluate_chemprop_model(
     max_simulation_idx = max(source_data['simulation_idx'].values) + 1
 
     # generate dataset if needed
-    dataset.generate_chemprop_dataset(simulation_idx_as_features=use_features)
+    dataset.generate_chemprop_dataset(force=True, simulation_idx_as_features=use_features)
 
     # construct evaluation metrics
     tot_train_auc, tot_val_auc, tot_ood_test_auc, tot_iid_test_auc, tot_virtual_test_auc = [], [], [], [], []
@@ -135,10 +135,6 @@ def train_and_evaluate_chemprop_model(
                                                                        np.array(iid_test_auc), \
                                                                        np.array(virtual_test_auc)
 
-    # np.save(os.path.join(base_dir, 'simulation_auc.npy'), simulation_auc)
-    # np.savez(os.path.join(base_dir, 'tot_auc.npz'), tot_train_auc=tot_train_auc, tot_val_auc=tot_val_auc, tot_test_auc=tot_ood_test_auc)
-    # np.savez(os.path.join(base_dir, 'auc.npz'), train_auc=train_auc, val_auc=val_auc, test_auc=ood_test_auc)
-
     print(f'Simulation AUROC:')
     print(f'Sim idx: {", ".join([str(i) for i in range(max_simulation_idx)])}')
     print(f'AUROC  : {", ".join([str(round(i, 3)) for i in simulation_auc])} \n\n')
@@ -152,9 +148,9 @@ def train_and_evaluate_chemprop_model(
 
 if __name__ == "__main__":
     n_replications = 1
-    name = 'xtb_test'
+    name = '4_ff_test'
     use_features = True
-    use_wandb = False
+    use_wandb = True
 
     if use_wandb:
         wandb.init(
@@ -167,8 +163,9 @@ if __name__ == "__main__":
         # 'ffn_hidden_size': 64,
         # 'depth': 3,
         # 'ffn_num_layers': 3,
-        'epochs': 200,
-        'init_lr': 0.001,
+        'epochs': 100,
+        'init_lr': 1e-3,
+        'batch_size': 50,
         # 'features_generator': 'rdkit_2d_normalized',
         # 'no_features_scaling': '',
     }
@@ -186,13 +183,12 @@ if __name__ == "__main__":
     # dataset = FFSimulatedEasDataset(
     #     csv_file_path="eas/ff_simulated_eas.csv"
     # )
-    # dataset = SingleFFSimulatedEasDataset(
-    #     csv_file_path="eas/single_ff_simulated_eas.csv",
-    # )
-
-    dataset = XtbSimulatedEasDataset(
-        csv_file_path="eas/xtb_simulated_eas.csv",
+    dataset = SingleFFSimulatedEasDataset(
+        csv_file_path="eas/single_ff_simulated_eas.csv",
     )
+    # dataset = XtbSimulatedEasDataset(
+    #     csv_file_path="eas/xtb_simulated_eas.csv",
+    # )
     source_data = dataset.load(
         aggregation_mode='low',
         margin=3 / 627.5
@@ -240,4 +236,4 @@ if __name__ == "__main__":
     ]
     for file in files:
         if os.path.exists(os.path.join(base_dir, file)):
-            os.path.join(base_dir, file)
+            os.remove(base_dir, file)

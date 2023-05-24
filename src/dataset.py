@@ -116,7 +116,7 @@ class Dataset:
                 for idx, smiles in enumerate(smiles):
                     smi_reac, smi_prod = smiles.split('>>')
                     mol_reac, mol_prod = Chem.MolFromSmiles(smi_reac), Chem.MolFromSmiles(smi_prod)
-                    n_atoms = max(mol_reac.GetNumAtoms(), mol_prod.GetNumAtoms()) + 1
+                    n_atoms = max(mol_reac.GetNumAtoms(), mol_prod.GetNumAtoms())
                     descriptors.append([simulation_idxs[idx] for _ in range(n_atoms)])
                 feat_dataframe['descriptors'] = descriptors
                 feat_dataframe.to_csv(self.chemprop_feature_file_path)

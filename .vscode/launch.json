@@ -1,0 +1,25 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "/home/rhjvanworkum/virtual_reactions/:$PYTHONPATH",
+                "OPENMM_CPU_THREADS": "4",
+                "OMP_NUM_THREADS": "1",
+                "AUTODE_LOG_LEVEL": "",
+                "BASE_PATH": "/home/rhjvanworkum/virtual_reactions/",
+                "BASE_DIR": "/home/rhjvanworkum/virtual_reactions/calculations/",
+                "XTB_PATH": "/home/rhjvanworkum/xtb-6.5.1/bin/xtb",
+            },
+        }
+    ]
+}

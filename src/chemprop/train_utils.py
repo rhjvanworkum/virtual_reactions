@@ -97,7 +97,9 @@ def make_chemprop_predict_args(
     args = {
         'smiles_columns': "smiles",
         'test_path': f"{os.path.join(base_dir, f'{label}_data.csv')}",
-        'preds_path': f"{os.path.join(base_dir, f'{label}_data_preds.csv')}"
+        'preds_path': f"{os.path.join(base_dir, f'{label}_data_preds.csv')}",
+        'checkpoint_path': os.path.join(base_dir, "fold_0/model_0/model.pt"),
+        # 'checkpoint_paths': [os.path.join(base_dir, "fold_0/model_0/model.pt")]
     }
 
     args_list = []
@@ -110,7 +112,7 @@ def make_chemprop_predict_args(
         setattr(args, key, value)
 
     if use_features:
-        args.atom_descriptors = "feature"
+        args.atom_descriptors = "descriptor"
         args.atom_descriptors_path = os.path.join(base_dir, f'{label}_feat.npz')
     
     return args
