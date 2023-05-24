@@ -15,7 +15,7 @@ def get_train_val_test_split(
 
 if __name__ == "__main__":
     name = 'experiment_2'
-    num_dft = 0.10
+    num_dft = 0.02
     train_split, val_split = 0.9, 0.1
 
     with open(f'data/{name}/splits/split.yaml', "r") as f:
@@ -31,7 +31,7 @@ if __name__ == "__main__":
         assert len(set(dft_train_idxs).intersection(set(dft_val_idxs))) == 0
 
         np.savez(
-            f'data/{name}/splits/mol_splits/mol_{mol_idx}.npz', 
+            f'data/{name}/splits/mol_splits/mol_{mol_idx}_small.npz', 
             train_idx=dft_train_idxs, 
             val_idx=dft_val_idxs, 
             ood_test_idx=[],

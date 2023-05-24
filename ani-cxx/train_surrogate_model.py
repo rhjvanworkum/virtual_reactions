@@ -23,11 +23,11 @@ from src.lr_schedulers import NoamLR
 
 
 if __name__ == "__main__":
-    name = 'mol1_5e-2_small'
+    name = 'mol1_small'
     i = 1
     data_path = './data/experiment_2/dataset.db'
     save_path = f"./data/experiment_2/models/{name}.pt"
-    split_file = f'./data/experiment_2/splits/mol_splits/mol_{i}.npz'
+    split_file = f'./data/experiment_2/splits/mol_splits/mol_{i}_small.npz'
     has_virtual_reactions = False
     n_simulations = 2
 
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     batch_size = 32
     cutoff = 5.0
     n_radial = 8
-    n_atom_basis = 8
+    n_atom_basis = 4
     n_interactions = 3
     sim_embedding_dim = 8
     n_layers = 3

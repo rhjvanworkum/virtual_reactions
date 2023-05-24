@@ -52,13 +52,13 @@ if __name__ == "__main__":
     # load dataset and add mol sim to dataset
     shutil.copy2(
         os.path.join(save_folder, 'dataset.db'),
-        os.path.join(save_folder, 'surrogate_dataset.db')
+        os.path.join(save_folder, 'surrogate_dataset_small.db')
     )
 
-    db = ASEAtomsData(os.path.join(save_folder, 'surrogate_dataset.db'))
+    db = ASEAtomsData(os.path.join(save_folder, 'surrogate_dataset_small.db'))
 
     for i in data_idxs['train'].keys():
-        model = torch.load(os.path.join(save_folder, f'models/mol{i}.pt'), map_location=device).to(device)
+        model = torch.load(os.path.join(save_folder, f'models/mol{i}_small.pt'), map_location=device).to(device)
         model.eval()
 
         with connect(os.path.join(save_folder, 'dataset.db')) as conn:
@@ -69,10 +69,10 @@ if __name__ == "__main__":
                     'energy': np.array([energy]),
                     'simulation_idx': np.array([i + 1])
                 })
-                data_idxs['train'][i]['mol_sim'].append(len(db))
+                data_idxs['train'][i]['mol_sim'].append(len(db) - 1)
 
         print(f'Finished mol {i}')
 
     # save split
-    with open(os.path.join(save_folder, 'splits/surrogate_split.yaml'), 'w') as yaml_file:
+    with open(os.path.join(save_folder, 'splits/surrogate_split_small.yaml'), 'w') as yaml_file:
         yaml.dump(data_idxs, yaml_file, default_flow_style=False)

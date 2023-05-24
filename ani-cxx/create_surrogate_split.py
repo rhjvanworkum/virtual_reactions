@@ -28,9 +28,9 @@ if __name__ == "__main__":
     num_cc = 0.05
     num_mol_sim = 0.30
     train_split, val_split = 0.9, 0.1
-    split_name = f'cc_{int(num_cc * 100)}_mol_sim_{int(num_mol_sim * 100)}'
+    split_name = f'cc_{int(num_cc * 100)}_mol_sim_small_{int(num_mol_sim * 100)}'
 
-    with open(f'data/{name}/splits/surrogate_split.yaml', "r") as f:
+    with open(f'data/{name}/splits/surrogate_split_small.yaml', "r") as f:
         split = yaml.load(f, Loader=yaml.Loader)
 
     # coupled cluster data
@@ -47,6 +47,11 @@ if __name__ == "__main__":
     mol_sim_idxs = []
     for mol_idx in split['train'].keys():
         mol_sim_data_idsx = np.array(split['train'][mol_idx]['mol_sim'])
+        
+        # TODO: temp remove
+        if 97751 in mol_sim_data_idsx:
+            mol_sim_data_idsx = mol_sim_data_idsx[mol_sim_data_idsx != 97751]
+        
         np.random.shuffle(mol_sim_data_idsx)
         mol_sim_idxs += mol_sim_data_idsx[:int(num_mol_sim * len(mol_sim_data_idsx))].tolist()
     mol_sim_idxs = np.array(mol_sim_idxs)
