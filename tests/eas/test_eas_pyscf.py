@@ -3,7 +3,7 @@ import time
 from rdkit import Chem
 
 from src.reactions.eas.eas_methods import EASDFTPySCF
-from src.reactions.eas.eas_reaction import EASReaction
+from src.reactions.eas_reaction import EASReaction
 
 
 def test_eas_reaction_dft():

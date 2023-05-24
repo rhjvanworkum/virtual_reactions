@@ -1,5 +1,5 @@
 import os
-from src.dataset import Dataset
+from src.data.datasets.dataset import Dataset
 from src.reactions.eas.dft_eas_dataset import DFTSimulatedEasDataset
 
 n_processes = 30

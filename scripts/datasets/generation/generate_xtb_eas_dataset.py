@@ -1,5 +1,5 @@
 import os
-from src.dataset import Dataset
+from src.data.datasets.dataset import Dataset
 from src.reactions.eas.xtb_eas_dataset import XtbSimulatedEasDataset
 
 n_processes = 14

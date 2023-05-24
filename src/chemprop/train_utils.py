@@ -1,9 +1,9 @@
 import os
 import pandas as pd
-from src.dataset import Dataset
-from src.split import Split
+from src.data.datasets.dataset import Dataset
+from src.splits import Split
 import numpy as np
-from typing import Dict, List, Callable
+from typing import Dict, List, Callable, Optional
 
 from chemprop.args import TrainArgs, PredictArgs
 from chemprop.train.make_predictions import make_predictions
@@ -86,19 +86,24 @@ def make_chemprop_training_args(
 
 
 def make_chemprop_predict_args(
-    label:str,
-    base_dir: str,
+    data_path: str,
+    pred_path: str,
+    model_path: str,
     other_args: Dict = {},
     use_features: bool = False,
+    atom_descriptor_path: Optional[str] = None,
 ):
     """
     Make ChemProp PredArgs object
     """
     args = {
         'smiles_columns': "smiles",
-        'test_path': f"{os.path.join(base_dir, f'{label}_data.csv')}",
-        'preds_path': f"{os.path.join(base_dir, f'{label}_data_preds.csv')}",
-        'checkpoint_path': os.path.join(base_dir, "fold_0/model_0/model.pt"),
+        # 'test_path': f"{os.path.join(base_dir, f'{label}_data.csv')}",
+        # 'preds_path': f"{os.path.join(base_dir, f'{label}_data_preds.csv')}",
+        # 'checkpoint_path': os.path.join(base_dir, "fold_0/model_0/model.pt"),
+        'test_path': data_path,
+        'preds_path': pred_path,
+        'checkpoint_path': model_path,
         # 'checkpoint_paths': [os.path.join(base_dir, "fold_0/model_0/model.pt")]
     }
 
@@ -113,21 +118,25 @@ def make_chemprop_predict_args(
 
     if use_features:
         args.atom_descriptors = "descriptor"
-        args.atom_descriptors_path = os.path.join(base_dir, f'{label}_feat.npz')
+        args.atom_descriptors_path = atom_descriptor_path
     
     return args
 
 def get_predictions(
-    label:str,
-    base_dir: str,
+    data_path: str,
+    pred_path: str,
+    model_path: str,
     other_args: Dict = {},
     use_features: bool = False,
+    atom_descriptor_path: Optional[str] = None,
 ):
     pred_args = make_chemprop_predict_args(
-        label,
-        base_dir,
+        data_path,
+        pred_path,
+        model_path,
         other_args,
         use_features,
+        atom_descriptor_path
     )
     preds = make_predictions(args=pred_args)
     preds = [p[0] for p in preds]

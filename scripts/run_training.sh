@@ -2,4 +2,5 @@
 
 source env.sh
 
-python scripts/train_chemprop_model_2.py
+python scripts/train_model.py
+# python scripts/train_eas_fingerprint_models.py

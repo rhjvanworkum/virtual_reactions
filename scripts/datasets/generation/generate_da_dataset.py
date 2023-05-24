@@ -1,5 +1,5 @@
 import os
-from src.dataset import Dataset
+from src.data.datasets.dataset import Dataset
 from src.reactions.da.da_dataset import XtbSimulatedDADataset, FukuiSimulatedDADataset
 import argparse
 

@@ -5,7 +5,7 @@ from src.reactions.e2_sn2.e2_sn2_dataset import list_to_atom
 from src.reactions.e2_sn2.e2_sn2_reaction import E2Sn2Reaction
 
 from src.reactions.eas.eas_methods import eas_ff_methods
-from src.reactions.eas.eas_reaction import EASReaction
+from src.reactions.eas_reaction import EASReaction
 
 
 def test_sn2_reaction_huckel():

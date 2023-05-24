@@ -1,5 +1,5 @@
 import os
-from src.dataset import Dataset
+from src.data.datasets.dataset import Dataset
 from src.reactions.eas.eas_dataset import SingleFFSimulatedEasDataset, FFSimulatedEasDataset
 
 n_processes = 25

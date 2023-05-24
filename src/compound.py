@@ -287,30 +287,3 @@ class Compound:
                 return None
 
             return (elec_parr_idxs, nuc_parr_idxs)
-        
-        # retrieve indices
-
-        # indices = []
-        # for idx in range(len(self.conformers)):
-        #     indices.append(
-        #         compute_fukui_indices(
-        #             molecule=self,
-        #             keywords=['--opt'],
-        #             conformer_idx=idx,
-        #             solvent=self.solvent
-        #         )
-        #     )
-        
-        # if len(indices) == 0:
-        #     return None
-        # else:
-        #     mean_indices = []
-        #     for idx in range(len(indices[0])):
-        #         mean_indices.append(
-        #             (
-        #                 np.mean(np.array([idxs[idx][0] for idxs in indices])),
-        #                 np.mean(np.array([idxs[idx][1] for idxs in indices])),
-        #                 np.mean(np.array([idxs[idx][2] for idxs in indices]))
-        #             )
-        #         )
-        #     return mean_indices

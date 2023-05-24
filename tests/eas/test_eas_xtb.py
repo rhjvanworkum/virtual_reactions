@@ -1,7 +1,7 @@
 import pandas as pd
 
 from src.reactions.eas.eas_methods import eas_xtb_method
-from src.reactions.eas.eas_reaction import EASReaction
+from src.reactions.eas_reaction import EASReaction
 
 
 def test_eas_reaction_xtb():

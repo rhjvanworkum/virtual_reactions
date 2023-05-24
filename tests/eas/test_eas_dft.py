@@ -1,7 +1,7 @@
 import pandas as pd
 
 from src.reactions.eas.eas_methods import EASDFT
-from src.reactions.eas.eas_reaction import EASReaction
+from src.reactions.eas_reaction import EASReaction
 
 
 def test_eas_reaction_dft():
