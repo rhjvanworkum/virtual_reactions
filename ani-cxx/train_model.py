@@ -22,17 +22,24 @@ from src.task import SimulatedAtomisticTask, SimulatedModelOutput
 
 
 if __name__ == "__main__":
-    # name = 'cc_5_mol_sim_10_smaller'
+    # name = 'cc_35_dft_0'
+    # data_path = './data/experiment_2/dataset.db'
+    # save_path = f"./data/experiment_2/models/{name}.pt"
+    # split_file = './data/experiment_2/splits/cc_35_dft_0.npz'
+    # has_virtual_reactions = False
+    # n_simulations = 1
+
+    # name = 'cc_5_mol_sim_20'
     # data_path = './data/experiment_2/surrogate_dataset.db'
     # save_path = f"./data/experiment_2/models/{name}.pt"
-    # split_file = './data/experiment_2/splits/cc_5_mol_sim_10.npz'
-    # has_virtual_reactions = True
+    # split_file = './data/experiment_2/splits/cc_5_mol_sim_20.npz'
+    # has_virtual_reactions = False
     # n_simulations = 6
 
-    name = 'cc_5_mol_sim_small_30'
+    name = 'cc_5_mol_sim_small_20'
     data_path = './data/experiment_2/surrogate_dataset_small.db'
     save_path = f"./data/experiment_2/models/{name}.pt"
-    split_file = './data/experiment_2/splits/cc_5_mol_sim_small_30.npz'
+    split_file = './data/experiment_2/splits/cc_5_mol_sim_small_20.npz'
     has_virtual_reactions = True
     n_simulations = 6
      

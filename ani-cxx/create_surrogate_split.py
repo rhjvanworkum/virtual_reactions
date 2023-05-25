@@ -26,12 +26,18 @@ if __name__ == "__main__":
     name = 'experiment_2'
 
     num_cc = 0.05
-    num_mol_sim = 0.30
+    num_mol_sim = 0.20
     train_split, val_split = 0.9, 0.1
-    split_name = f'cc_{int(num_cc * 100)}_mol_sim_small_{int(num_mol_sim * 100)}'
+    small = True
 
-    with open(f'data/{name}/splits/surrogate_split_small.yaml', "r") as f:
-        split = yaml.load(f, Loader=yaml.Loader)
+    if small:
+        split_name = f'cc_{int(num_cc * 100)}_mol_sim_small_{int(num_mol_sim * 100)}'
+        with open(f'data/{name}/splits/surrogate_split_small.yaml', "r") as f:
+            split = yaml.load(f, Loader=yaml.Loader)
+    else:
+        split_name = f'cc_{int(num_cc * 100)}_mol_sim_{int(num_mol_sim * 100)}'
+        with open(f'data/{name}/splits/surrogate_split.yaml', "r") as f:
+            split = yaml.load(f, Loader=yaml.Loader)
 
     # coupled cluster data
     cc_idxs = []

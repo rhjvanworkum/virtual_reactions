@@ -25,7 +25,7 @@ def get_train_val_split(
 if __name__ == "__main__":
     name = 'experiment_2'
 
-    num_cc = 0.25
+    num_cc = 0.35
     num_dft = 0
     train_split, val_split = 0.9, 0.1
     split_name = f'cc_{int(num_cc * 100)}_dft_{int(num_dft * 100)}'
