@@ -1,37 +1,45 @@
 import os
+import pandas as pd
 
 from src.chemprop.train_vr import train_and_evaluate_chemprop_vr_model
 from src.data.datasets.dataset import Dataset
-from src.data.datasets.eas.xtb_simulated_eas_dataset import XtbSimulatedEasDataset
-from src.data.splits.random_split import RandomSplit
+from src.data.splits.hetero_cycle_split import HeteroCycleSplit
+from src.data.splits.manual_vr_split import ManualVirtualReactionSplit
 
 
 if __name__ == "__main__":
     n_replications = 1
-    name = 'xtb_eas_regression_full'
-    project = 'vr'
+    name = 'global_simulated_eas_heterocycle_bigger'
+    project = 'vr-new'
     use_features = True
     use_wandb = True
 
     training_args = {
-        # 'hidden_size': 512,
+        'hidden_size': 600,
         # 'ffn_hidden_size': 64,
         # 'depth': 3,
         # 'ffn_num_layers': 3,
-        'epochs': 15,
+        'epochs': 100,
         # 'init_lr': 1e-3,
         # 'batch_size': 50,
     }
 
-    dataset = XtbSimulatedEasDataset(
-        csv_file_path="eas/xtb_simulated_eas_20pct.csv"
+    dataset = Dataset(
+        csv_file_path="eas/global_simulated_eas_dataset.csv"
     )
-    source_data = dataset.load(mode='regression')
+    source_data = dataset.load()
 
-    dataset_split = RandomSplit(
+    dataset_split = HeteroCycleSplit(
         train_split=0.9,
         val_split=0.1,
+        transductive=True
     )
+    # dataset_split = ManualVirtualReactionSplit(
+    #     train_split=0.9,
+    #     val_split=0.1,
+    #     transductive=True,
+    #     ood_test_substrates=pd.read_csv('./data/eas/fingerprint_splits/split_1.csv')['substrates'].values
+    # )
 
     base_dir = os.path.join('./experiments', name)
     if not os.path.exists(base_dir):
@@ -43,6 +51,7 @@ if __name__ == "__main__":
         wandb_project_name=project,
         n_replications=n_replications,
         use_features=use_features,
+        task='classification',
         dataset=dataset,
         source_data=source_data,
         dataset_split=dataset_split,

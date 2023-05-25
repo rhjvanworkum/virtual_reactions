@@ -11,7 +11,10 @@ from src.data.splits.fingerprint_similarity_split import FingerprintSimilaritySp
 
 if __name__ == "__main__":
     random_seed = 420
-    base_path = './data/eas/20_pct_fingerprint_splits/'
+    pct_base_path = './data/eas/20_pct_fingerprint_splits/'
+    base_path = './data/eas/fingerprint_splits/'
+    if not os.path.exists(pct_base_path):
+        os.makedirs(pct_base_path)
     if not os.path.exists(base_path):
         os.makedirs(base_path)
     n_clusters = 5
@@ -25,10 +28,13 @@ if __name__ == "__main__":
 
     split = FingerprintSimilaritySplit(n_clusters=n_clusters)
     dataframes = split.generate_splits(df, 420)
-    dataframes = [dataframe[:max_data_points] for dataframe in dataframes]
-
+    # save FP split dataframes
     for idx, dataframe in enumerate(dataframes):
         dataframe.to_csv(os.path.join(base_path, f'split_{idx}.csv'))
-
+    # save 20% FP split dataframes
+    dataframes = [dataframe[:max_data_points] for dataframe in dataframes]
+    for idx, dataframe in enumerate(dataframes):
+        dataframe.to_csv(os.path.join(pct_base_path, f'split_{idx}.csv'))
+    # save total 20% dataset
     df = pd.concat(dataframes)
     df.to_csv('./data/eas/xtb_simulated_eas_20pct.csv')

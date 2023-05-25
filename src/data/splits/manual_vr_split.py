@@ -5,17 +5,7 @@ from rdkit import Chem
 
 from src.data.splits.virtual_reaction_split import VirtualReactionSplit
 
-
-class HeteroCycleSplit(VirtualReactionSplit):
-
-    excluded_hetero_cycles = [
-        'c1cOcc1',
-        'c1cOnc1',
-        'c1cOcn1',
-        'c1cScc1',
-        'c1cSnc1',
-        'c1cScn1',
-    ]
+class ManualVirtualReactionSplit(VirtualReactionSplit):
 
     def __init__(
         self,
@@ -23,6 +13,7 @@ class HeteroCycleSplit(VirtualReactionSplit):
         val_split: Union[float, int] = 0.1,
         iid_test_split: float = 0.05,
         virtual_test_split: float = 0.05,
+        ood_test_substrates: List[str] = [], 
         transductive: bool = True,
     ) -> None:
         super().__init__(transductive=transductive)
@@ -32,16 +23,8 @@ class HeteroCycleSplit(VirtualReactionSplit):
 
         self.iid_test_split = iid_test_split
         self.virtual_test_split = virtual_test_split
-       
-    def _contains_heterocycle(
-        self,
-        smiles: str
-    ) -> bool:
-        mol = Chem.MolFromSmiles(smiles)
-        for heterocycle in self.excluded_hetero_cycles:
-                if mol.HasSubstructMatch(Chem.MolFromSmiles(heterocycle)):
-                    return True
-        return False
+
+        self.ood_test_substrates = ood_test_substrates
 
     def _get_ood_test_set_uids(
         self,
@@ -54,7 +37,7 @@ class HeteroCycleSplit(VirtualReactionSplit):
         """
         ood_test_set_uids = []
         for substrate, uid, simulation_idx in zip(substrates, uids, simulation_idxs):
-            if self._contains_heterocycle(substrate) and simulation_idx == 0:
+            if substrate in self.ood_test_substrates and simulation_idx == 0:
                 ood_test_set_uids.append(uid)
         return np.array(ood_test_set_uids)
 
@@ -69,7 +52,7 @@ class HeteroCycleSplit(VirtualReactionSplit):
         """
         potential_iid_test_set_uids = []
         for substrate, uid, simulation_idx in zip(substrates, uids, simulation_idxs):
-            if not self._contains_heterocycle(substrate) and simulation_idx == 0:
+            if not substrate in self.ood_test_substrates and simulation_idx == 0:
                 potential_iid_test_set_uids.append(uid)
 
         potential_iid_test_set_uids = np.array(potential_iid_test_set_uids)

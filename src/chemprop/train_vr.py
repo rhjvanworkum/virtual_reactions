@@ -1,5 +1,5 @@
 import os
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Literal, Optional
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 from random import randint
@@ -20,6 +20,7 @@ def train_and_evaluate_chemprop_vr_model(
     wandb_name: str,
     n_replications: int,
     use_features: bool,
+    task: Literal["classification", "regression"],
     dataset: Dataset,
     source_data: pd.DataFrame,
     dataset_split: Split,
@@ -66,6 +67,7 @@ def train_and_evaluate_chemprop_vr_model(
         training_args = make_chemprop_training_args(
             use_wandb=use_wandb,
             base_dir=base_dir,
+            task=task,
             metric_names=[],
             random_seed=random_seed,
             other_args=other_training_args,

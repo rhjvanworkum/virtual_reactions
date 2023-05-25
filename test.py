@@ -2,15 +2,19 @@
 
 # sbatch -N 1 --ntasks-per-node=16 --gres=gpu:2 --partition zen2_0256_a40x2 --qos zen2_0256_a40x2 --output=job_%A.out scripts/submit_vr_training.sh
 
-from src.chembl import ChemblData, filter_chembl_compounds_fn_eas
 
-chembl_data = ChemblData(n_workers=8)
-closest_smiles, similarity = chembl_data.get_similar_mols(
-    smiles='COc1nc2nc(C(=O)c3ccccc3)cn2c2c1CSCC2',
-    n_compounds=5,
-    filter_fn=filter_chembl_compounds_fn_eas
-)
-print(closest_smiles, similarity)
+from transformers import AlbertModel
+
+
+# from src.chembl import ChemblData, filter_chembl_compounds_fn_eas
+
+# chembl_data = ChemblData(n_workers=8)
+# closest_smiles, similarity = chembl_data.get_similar_mols(
+#     smiles='COc1nc2nc(C(=O)c3ccccc3)cn2c2c1CSCC2',
+#     n_compounds=5,
+#     filter_fn=filter_chembl_compounds_fn_eas
+# )
+# print(closest_smiles, similarity)
 
 
 # from src.data.datasets.eas.xtb_simulated_eas_dataset import XtbSimulatedEasDataset

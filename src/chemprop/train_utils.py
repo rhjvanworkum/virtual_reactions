@@ -3,7 +3,7 @@ import pandas as pd
 from src.data.datasets.dataset import Dataset
 from src.data.splits import Split
 import numpy as np
-from typing import Dict, List, Callable, Optional
+from typing import Dict, List, Callable, Literal, Optional
 
 from chemprop.args import TrainArgs, PredictArgs
 from chemprop.train.make_predictions import make_predictions
@@ -40,6 +40,7 @@ def prepare_csv_files_for_chemprop(
 def make_chemprop_training_args(
     use_wandb: bool,
     base_dir: str,
+    task: Literal["classification", "regression"],
     metric_names: List[str],
     random_seed: int = 420,
     other_args: Dict = {},
@@ -57,7 +58,7 @@ def make_chemprop_training_args(
         "separate_val_path": os.path.join(base_dir, 'val_data.csv'),
         "separate_test_path": os.path.join(base_dir, 'ood_test_data.csv'),
         # other stuff
-        "dataset_type": "classification",
+        "dataset_type": task,
         "pytorch_seed": random_seed,
         "save_dir": base_dir,
     }
