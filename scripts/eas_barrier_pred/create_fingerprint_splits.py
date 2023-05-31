@@ -11,8 +11,8 @@ from src.data.splits.fingerprint_similarity_split import FingerprintSimilaritySp
 
 if __name__ == "__main__":
     random_seed = 420
-    pct_base_path = './data/eas/20_pct_fingerprint_splits/'
-    base_path = './data/eas/fingerprint_splits/'
+    pct_base_path = './data/eas/20_pct_fingerprint_splits_class/'
+    base_path = './data/eas/fingerprint_splits_class/'
     if not os.path.exists(pct_base_path):
         os.makedirs(pct_base_path)
     if not os.path.exists(base_path):
@@ -23,7 +23,13 @@ if __name__ == "__main__":
     dataset = XtbSimulatedEasDataset(
         csv_file_path="eas/xtb_simulated_eas.csv"
     )
-    df = dataset.load(mode='regression')
+    # df = dataset.load()
+    df = dataset.load(
+        aggregation_mode='low',
+        margin=3 / 627.5
+    )
+    df = df[df['simulation_idx'] == 1]
+
     max_data_points = int(0.2 * len(df) / n_clusters)
 
     split = FingerprintSimilaritySplit(n_clusters=n_clusters)
@@ -37,4 +43,4 @@ if __name__ == "__main__":
         dataframe.to_csv(os.path.join(pct_base_path, f'split_{idx}.csv'))
     # save total 20% dataset
     df = pd.concat(dataframes)
-    df.to_csv('./data/eas/xtb_simulated_eas_20pct.csv')
+    df.to_csv('./data/eas/xtb_simulated_eas_20pct_class.csv')

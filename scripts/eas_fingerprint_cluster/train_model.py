@@ -6,31 +6,32 @@ from src.data.splits.hetero_cycle_split import HeteroCycleSplit
 
 
 if __name__ == "__main__":
-    n_replications = 1
-    name = 'fp_sim_test'
+    n_replications = 3
+    name = 'fp_sim_whole_nontrans'
     project = 'vr'
     use_features = True
     use_wandb = True
 
     training_args = {
         # 'hidden_size': 512,
-        # 'ffn_hidden_size': 64,
-        # 'depth': 3,
+        # 'ffn_hidden_size': 512,
         # 'ffn_num_layers': 3,
-        'epochs': 15,
+        # 'depth': 4,
+        
+        'epochs': 25,
         # 'init_lr': 1e-3,
         # 'batch_size': 50,
     }
 
     dataset = Dataset(
-        csv_file_path="eas/eas_dataset_fingerprint_simulated.csv"
+        csv_file_path="eas/eas_dataset_fingerprint_simulated_whole.csv"
     )
     source_data = dataset.load()
 
     dataset_split = HeteroCycleSplit(
         train_split=0.9,
         val_split=0.1,
-        transductive=True
+        transductive=False
     )
 
     base_dir = os.path.join('./experiments', name)

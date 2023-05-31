@@ -20,22 +20,16 @@ def train_and_evaluate_chemprop_vr_model(
     wandb_name: str,
     n_replications: int,
     use_features: bool,
-    task: Literal["classification", "regression"],
     dataset: Dataset,
     source_data: pd.DataFrame,
     dataset_split: Split,
     base_dir: os.path,
     other_training_args: Dict[str, str],
     other_prediction_args: Dict[str, str],
+    task: Literal["classification", "regression"] = "classification",
     force_dataset_generation: bool = False,
     scheduler_fn: Optional[Callable] = None
 ) -> None:
-    if use_wandb:
-        wandb.init(
-            project=wandb_project_name,
-            name=wandb_name
-        )
-
     max_simulation_idx = max(source_data['simulation_idx'].values) + 1
 
     # generate dataset if needed
@@ -50,7 +44,13 @@ def train_and_evaluate_chemprop_vr_model(
                                                                         [[] for _ in range(max_simulation_idx)]
 
     # train and evaluate model
-    for _ in range(n_replications):
+    for i in range(n_replications):
+        if use_wandb:
+            wandb.init(
+                project=wandb_project_name,
+                name=f'{wandb_name}_{i}'
+            )
+
         random_seed = randint(1, 1000)
 
         # 1. Prepare CSV files
@@ -118,6 +118,9 @@ def train_and_evaluate_chemprop_vr_model(
                     else:
                         auc_list[simulation_idx].append(0)
 
+        if use_wandb:
+            wandb.finish()
+
     # evaluate simulation
     simulation_auc = [1.0]
     for simulation_idx in range(1, max_simulation_idx):
@@ -176,4 +179,4 @@ def train_and_evaluate_chemprop_vr_model(
     ]
     for file in files:
         if os.path.exists(os.path.join(base_dir, file)):
-            os.remove(base_dir, file)
+            os.remove(os.path.join(base_dir, file))

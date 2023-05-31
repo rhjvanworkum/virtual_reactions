@@ -9,16 +9,17 @@ from src.data.splits.manual_vr_split import ManualVirtualReactionSplit
 
 if __name__ == "__main__":
     n_replications = 1
-    name = 'global_simulated_eas_heterocycle_bigger'
+    name = 'global_simulated_eas_heterocycle(new)'
     project = 'vr-new'
     use_features = True
     use_wandb = True
 
     training_args = {
-        'hidden_size': 600,
-        # 'ffn_hidden_size': 64,
-        # 'depth': 3,
+        # 'hidden_size': 512,
+        # 'ffn_hidden_size': 512,
         # 'ffn_num_layers': 3,
+        # 'depth': 4,
+
         'epochs': 100,
         # 'init_lr': 1e-3,
         # 'batch_size': 50,

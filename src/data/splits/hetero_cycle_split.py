@@ -109,7 +109,7 @@ class HeteroCycleSplit(VirtualReactionSplit):
         if not self.transductive:
             for substrate, uid, simulation_idx in zip(substrates, uids, simulation_idxs):
                 if self._contains_heterocycle(substrate) and simulation_idx != 0:
-                    r_idx = data[data['uid'] == uid][0]['reaction_idx']
+                    r_idx = data[data['uid'] == uid]['reaction_idx'].values[0]
                     if r_idx in data[data['simulation_idx'] == 0]['reaction_idx'].values:
                         excluded_set_uids.append(uid)
         return np.array(excluded_set_uids)
@@ -131,7 +131,7 @@ class HeteroCycleSplit(VirtualReactionSplit):
         ood_test_set_uids = self._get_ood_test_set_uids(substrates, uids, simulation_idxs)
         iid_test_set_uids = self._get_iid_test_set_uids(substrates, uids, simulation_idxs)
         virtual_test_set_uids = self._get_virtual_test_set_uids(substrates, uids, simulation_idxs)
-        excluded_set_uids = self._get_excluded_set_uids(substrates, uids, simulation_idxs, data)
+        excluded_set_uids = self._get_excluded_set_uids(substrates, list(filter(lambda x: x not in virtual_test_set_uids, uids)), simulation_idxs, data)
 
         left_over_uids = np.array([
             id for id in uids if (

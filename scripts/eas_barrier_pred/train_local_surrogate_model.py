@@ -7,24 +7,27 @@ from src.data.splits.random_split import RandomSplit
 from src.chemprop.metrics import mean_absolute_error, mean_squared_error, pearson
 
 if __name__ == "__main__":
-    split_idx = 2
-    name = f'20_pct_fingerprint_split_{split_idx}'
+    split_idx = 0
+    name = f'20_pct_fingerprint_split_{split_idx}_class'
     project = 'vr-fingerprints'
 
-    n_replications = 1
-    use_features = True
+    n_replications = 3
+    use_features = False # note turn use features off when using the pretrained grambow model
     use_wandb = True
-    metrics = [
-        'mae', 'mse', 'pearson'
-    ]
+    # metrics = [
+    #     'mae', 'mse', 'pearson'
+    # ]
+    metrics = []
 
     training_args = {
-        'hidden_size': 400,
+        # 'hidden_size': 300,
         # 'depth': 3
         'epochs': 200,
         # 'init_lr': 1e-3,
-        # 'ffn_hidden_size': 64,
+        # 'ffn_hidden_size': 300,
         # 'ffn_num_layers': 3,
+        'checkpoint_paths': ['./data/models/grambow_pre_10.pt'],
+        'exclude_parameters': ['readout'],
     }
 
     base_dir = os.path.join('./experiments', name)
@@ -36,7 +39,7 @@ if __name__ == "__main__":
 
 
     dataset = Dataset(
-        csv_file_path=f"eas/20_pct_fingerprint_splits/split_{split_idx}.csv"
+        csv_file_path=f"eas/20_pct_fingerprint_splits_class/split_{split_idx}.csv"
     )
     source_data = dataset.load()
 
@@ -51,7 +54,7 @@ if __name__ == "__main__":
         wandb_project_name=project,
         n_replications=n_replications,
         use_features=use_features,
-        task="regression",
+        task="classification",
         metrics=metrics,
         dataset=dataset,
         source_data=source_data,

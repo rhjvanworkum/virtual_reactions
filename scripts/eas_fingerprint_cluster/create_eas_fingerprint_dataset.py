@@ -7,18 +7,24 @@ from src.data.datasets.dataset import Dataset
 
 
 if __name__ == "__main__":
+    output_dataset_name = './data/eas/eas_dataset_fingerprint_simulated_whole.csv'
+
     dataset = Dataset(
         csv_file_path="eas/eas_dataset.csv"
     )
     source_data = dataset.load()
 
     for i in range(4):
-        data_path = f'./data/eas/fingerprint_splits/split_{i}_chemprop.csv'
+        # data_path = f'./data/eas/fingerprint_splits/split_{i}_chemprop.csv'
+        # dataset_path = f'eas/fingerprint_splits/split_{i}.csv'
+        data_path = f'./data/eas/eas_dataset_chemprop.csv'
+        dataset_path = f'eas/eas_dataset.csv'
+
         pred_path = f'./test.csv'
         model_path = f'./experiments/fingeprint_split_{i}/fold_0/model_0/model.pt'
 
         atom_descriptor_path = f'./test.npz'
-        _dataset = Dataset(csv_file_path=f'eas/fingerprint_splits/split_{i}.csv')
+        _dataset = Dataset(csv_file_path=dataset_path)
         feat = _dataset.load_chemprop_features()
         np.savez(atom_descriptor_path, *feat)
 
@@ -41,4 +47,4 @@ if __name__ == "__main__":
         df['uid'] = [max(source_data['uid'].values) + i + 1 for i in range(len(df))]
         source_data = pd.concat([source_data, df])
 
-    source_data.to_csv('./data/eas/eas_dataset_fingerprint_simulated.csv')
+    source_data.to_csv(output_dataset_name)

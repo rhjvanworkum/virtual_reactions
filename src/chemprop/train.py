@@ -31,17 +31,17 @@ def train_and_evaluate_chemprop_model(
     force_dataset_generation: bool = False,
     scheduler_fn: Optional[Callable] = None
 ) -> None:
-    if use_wandb:
-        wandb.init(
-            project=wandb_project_name,
-            name=wandb_name
-        )
-
     # generate dataset if needed
     dataset.generate_chemprop_dataset(force=force_dataset_generation, simulation_idx_as_features=use_features)
 
     # train and evaluate model
-    for _ in range(n_replications):
+    for i in range(n_replications):
+        if use_wandb:
+            wandb.init(
+                project=wandb_project_name,
+                name=f'{wandb_name}_{i}'
+            )
+
         random_seed = randint(1, 1000)
 
         # 1. Prepare CSV files
@@ -72,6 +72,9 @@ def train_and_evaluate_chemprop_model(
             use_features=use_features,
         )
         cross_validate(args=training_args, train_func=run_training, scheduler_fn=scheduler_fn)
+
+        if use_wandb:
+            wandb.finish()
 
     # clean up
     files = [
