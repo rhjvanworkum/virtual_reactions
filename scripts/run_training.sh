@@ -2,10 +2,12 @@
 
 source env.sh
 
+## DA dataset
+python scripts/diels_alder/train_model.py
 
 ## EAS barrier pred
 # python scripts/eas_barrier_pred/train_global_surrogate_model.py
-python scripts/eas_barrier_pred/train_local_surrogate_model.py
+# python scripts/eas_barrier_pred/train_local_surrogate_model.py
 # python scripts/eas_barrier_pred/train_local_simulated_model.py
 # python scripts/eas_barrier_pred/train_global_simulated_model.py
 # python scripts/eas_barrier_pred/train_baseline_model.py

@@ -30,7 +30,7 @@ def train_and_evaluate_chemprop_vr_model(
     force_dataset_generation: bool = False,
     scheduler_fn: Optional[Callable] = None
 ) -> None:
-    max_simulation_idx = max(source_data['simulation_idx'].values) + 1
+    max_simulation_idx = int(max(source_data['simulation_idx'].values) + 1)
 
     # generate dataset if needed
     dataset.generate_chemprop_dataset(force=force_dataset_generation, simulation_idx_as_features=use_features)
