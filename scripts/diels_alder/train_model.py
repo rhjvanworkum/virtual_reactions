@@ -3,13 +3,14 @@ import os
 from src.chemprop.train_vr import train_and_evaluate_chemprop_vr_model
 from src.chemprop.train import train_and_evaluate_chemprop_model
 from src.data.datasets.dataset import Dataset
+from src.data.splits.da_split import DASplit
 from src.data.splits.hetero_cycle_split import HeteroCycleSplit
 from src.data.splits.random_split import RandomSplit
 
 
 if __name__ == "__main__":
-    n_replications = 1
-    name = 'DA_literature_random'
+    n_replications = 2
+    name = 'DA_literature_kmeans_4_2'
     project = 'vr-da'
     use_features = True
     use_wandb = True
@@ -19,7 +20,7 @@ if __name__ == "__main__":
         # 'ffn_hidden_size': 64,
         # 'depth': 3,
         # 'ffn_num_layers': 3,
-        'epochs': 100,
+        'epochs': 50,
         # 'init_lr': 1e-3,
         # 'batch_size': 50,
     }
@@ -29,10 +30,12 @@ if __name__ == "__main__":
     )
     source_data = dataset.load()
     
-    dataset_split = RandomSplit(
-        train_split=0.8,
+    dataset_split = DASplit(
+        train_split=0.9,
         val_split=0.1,
-        test_split=0.1
+        clustering_method='Birch',
+        n_clusters=4,
+        n_ood_test_clusters=2
     )
 
     base_dir = os.path.join('./experiments', name)
