@@ -9,8 +9,8 @@ from src.data.splits.random_split import RandomSplit
 
 
 if __name__ == "__main__":
-    n_replications = 2
-    name = 'DA_literature_kmeans_4_2'
+    n_replications = 3
+    name = 'global_simulated_DA_literature_Butina=2_nontrans'
     project = 'vr-da'
     use_features = True
     use_wandb = True
@@ -26,17 +26,25 @@ if __name__ == "__main__":
     }
 
     dataset = Dataset(
-        csv_file_path="da/DA_literature.csv"
+        csv_file_path="da/global_simulated_DA_literature.csv"
     )
     source_data = dataset.load()
     
     dataset_split = DASplit(
         train_split=0.9,
         val_split=0.1,
-        clustering_method='Birch',
-        n_clusters=4,
-        n_ood_test_clusters=2
+        clustering_method='Butina',
+        min_cluster_size=2,
+        transductive=False
     )
+    # dataset_split = DASplit(
+    #     train_split=0.9,
+    #     val_split=0.1,
+    #     clustering_method='Birch',
+    #     n_clusters=4,
+    #     n_ood_test_clusters=2,
+    #     exclude_simulations=True
+    # )
 
     base_dir = os.path.join('./experiments', name)
     if not os.path.exists(base_dir):

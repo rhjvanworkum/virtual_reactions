@@ -1,3 +1,4 @@
+from typing import Literal
 import numpy as np
 import os
 import pandas as pd
@@ -19,7 +20,8 @@ def create_simulated_df(
     model_path: str,
     source_data: pd.DataFrame,
     feat: np.ndarray,
-    use_features: bool = False
+    use_features: bool = False,
+    mode: Literal["classification", "regression"] = "classification"
 ):
     pred_path = './test.csv'
 
@@ -31,11 +33,7 @@ def create_simulated_df(
         data_path=data_path,
         pred_path=pred_path,
         model_path=model_path,
-        other_args={
-            # 'ffn_hidden_size': 512,
-            # 'features_generator': ['rdkit_2d_normalized'],
-            # 'no_features_scaling': '',
-        },
+        other_args={},
         use_features=use_features,
         atom_descriptor_path=atom_descriptor_path
     )
@@ -46,17 +44,18 @@ def create_simulated_df(
     new_data = source_data.copy()
     new_data['simulation_idx'] = [sim_idx for _ in range(len(new_data))]
 
-    new_data['label'] = [round(pred) for pred in preds]
+    if mode == "classification":
+        new_data['label'] = [round(pred) for pred in preds]
+    else:
+        new_data['barrier'] = preds
 
-    # new_data['barrier'] = preds
-
-    # labels = []
-    # for _, row in new_data.iterrows():
-    #     barrier = row['barrier']
-    #     other_barriers = new_data[new_data['substrates'] == row['substrates']]['barrier']
-    #     label = int((barrier <= other_barriers).all())
-    #     labels.append(label)
-    # new_data['label'] = labels
+        labels = []
+        for _, row in new_data.iterrows():
+            barrier = row['barrier']
+            other_barriers = new_data[new_data['substrates'] == row['substrates']]['barrier']
+            label = int((barrier <= other_barriers).all())
+            labels.append(label)
+        new_data['label'] = labels
 
     return new_data
     
