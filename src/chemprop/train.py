@@ -32,7 +32,7 @@ def train_and_evaluate_chemprop_model(
     scheduler_fn: Optional[Callable] = None
 ) -> None:
     # generate dataset if needed
-    dataset.generate_chemprop_dataset(force=force_dataset_generation, simulation_idx_as_features=use_features)
+    dataset.generate_chemprop_dataset(force=force_dataset_generation)
 
     # train and evaluate model
     for i in range(n_replications):

@@ -26,7 +26,7 @@ if __name__ == "__main__":
         # 'init_lr': 1e-3,
         # 'ffn_hidden_size': 300,
         # 'ffn_num_layers': 3,
-        'checkpoint_paths': ['./data/models/grambow_pre_10.pt'],
+        'checkpoint_paths': ['./data/models/grambow_pre_100.pt'],
         'exclude_parameters': ['readout'],
     }
 

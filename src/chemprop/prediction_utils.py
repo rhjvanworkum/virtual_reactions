@@ -17,6 +17,7 @@ def create_simulated_df(
     Create a simulated version of a reaction dataset using the predictions of a trained
     ChemProp model.
     """
+    dataset.generate_chemprop_dataset()
     source_data = dataset.load()
 
     pred_path = './test.csv'
@@ -26,7 +27,7 @@ def create_simulated_df(
     np.savez(atom_descriptor_path, *feat)
 
     preds = get_predictions(
-        data_path=dataset.chemprop_csv_file_path,
+        data_path=dataset.chemprop_dataset_path,
         pred_path=pred_path,
         model_path=model_path,
         other_args={},

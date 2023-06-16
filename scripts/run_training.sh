@@ -6,6 +6,9 @@ source env.sh
 # python scripts/diels_alder/train_model.py
 # python scripts/diels_alder/train_surrogate_model.py
 
+## FCA dataset
+python scripts/fca/train_surrogate_model.py
+
 ## EAS barrier pred
 # python scripts/eas_barrier_pred/train_global_surrogate_model.py
 # python scripts/eas_barrier_pred/train_local_surrogate_model.py
@@ -20,5 +23,5 @@ source env.sh
 
 ## Train baseline model(s)
 # python scripts/train_baseline_model.py
-python scripts/train_xtb_model.py
+# python scripts/train_xtb_model.py
 # python scripts/train_ff_model.py
