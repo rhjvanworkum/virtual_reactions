@@ -1,11 +1,15 @@
-from typing import List, Tuple, Union
-import numpy as np
+import gin
 import pandas as pd
-from rdkit import Chem
+import random
+from typing import List, Literal, Optional, Tuple, Union
 
+import numpy as np
+from src.data.splits.fingerprint_similarity_split import FingerprintSimilaritySplit
 from src.data.splits.virtual_reaction_split import VirtualReactionSplit
 
-class ManualVirtualReactionSplit(VirtualReactionSplit):
+
+@gin.configurable
+class FingerprintVirtualReactionSplit(VirtualReactionSplit):
 
     def __init__(
         self,
@@ -13,10 +17,13 @@ class ManualVirtualReactionSplit(VirtualReactionSplit):
         val_split: Union[float, int] = 0.1,
         iid_test_split: float = 0.05,
         virtual_test_split: float = 0.05,
-        ood_test_substrates: List[str] = [], 
         transductive: bool = True,
+        clustering_method: Literal["KMeans", "Birch", "Butina"] = "Birch",
+        n_clusters: int = 6,
+        n_ood_test_clusters: Optional[int] = None,
+        min_cluster_size: Optional[int] = None,
     ) -> None:
-        super().__init__(transductive=transductive)
+        super().__init__(transductive)
         self.train_split = train_split
         self.val_split = val_split
         assert self.train_split + self.val_split == 1
@@ -24,11 +31,41 @@ class ManualVirtualReactionSplit(VirtualReactionSplit):
         self.iid_test_split = iid_test_split
         self.virtual_test_split = virtual_test_split
 
-        self.ood_test_substrates = ood_test_substrates
+        self.n_ood_test_clusters = n_ood_test_clusters
+        self.min_cluster_size = min_cluster_size
+        if self.n_ood_test_clusters is not None and self.min_cluster_size is not None:
+            raise ValueError("Can Only set either n ood clusters or min cluster size")
+        if self.n_ood_test_clusters is None and self.min_cluster_size is None:
+            raise ValueError("Must set either n ood clusters or min cluster size") 
+
+        self.fingerprint_split = FingerprintSimilaritySplit(
+            clustering_method=clustering_method,
+            n_clusters=n_clusters,
+            key="products"
+        )
+
+        self._test_products = None
+
+    def _set_ood_test_compounds_from_clusters(
+        self,
+        data: pd.DataFrame
+    ) -> List[str]:
+        tmp_data = data
+        data = tmp_data[tmp_data['simulation_idx'] == 0]
+        sim_data = tmp_data[tmp_data['simulation_idx'] != 0]
+
+        clusters = self.fingerprint_split.generate_splits(data)
+        
+        if self.min_cluster_size is not None:
+            test_cluster_idxs = [i for i, cluster in enumerate(clusters) if len(cluster) < self.min_cluster_size]
+        elif self.n_ood_test_clusters is not None:
+            test_cluster_idxs = random.sample(np.arange(len(clusters)).tolist(), self.n_ood_test_clusters)
+
+        self._test_products = pd.concat([clusters[i] for i in test_cluster_idxs])['products'].values.tolist()
 
     def _get_ood_test_set_uids(
         self,
-        substrates: List[str],
+        products: List[str],
         uids: List[int],
         simulation_idxs: List[int]
     ) -> List[int]:
@@ -36,14 +73,14 @@ class ManualVirtualReactionSplit(VirtualReactionSplit):
         Returns the OOD test set, experimental data that is consider out-of-distribution
         """
         ood_test_set_uids = []
-        for substrate, uid, simulation_idx in zip(substrates, uids, simulation_idxs):
-            if substrate in self.ood_test_substrates and simulation_idx == 0:
+        for product, uid, simulation_idx in zip(products, uids, simulation_idxs):
+            if product in self._test_products and simulation_idx == 0:
                 ood_test_set_uids.append(uid)
         return np.array(ood_test_set_uids)
-
+    
     def _get_iid_test_set_uids(
         self,
-        substrates: List[str],
+        products: List[str],
         uids: List[int],
         simulation_idxs: List[int]
     ) -> List[int]:
@@ -51,8 +88,8 @@ class ManualVirtualReactionSplit(VirtualReactionSplit):
         Returns the IID test set, experimental data that is consider in-distribution
         """
         potential_iid_test_set_uids = []
-        for substrate, uid, simulation_idx in zip(substrates, uids, simulation_idxs):
-            if not substrate in self.ood_test_substrates and simulation_idx == 0:
+        for product, uid, simulation_idx in zip(products, uids, simulation_idxs):
+            if not product in self._test_products and simulation_idx == 0:
                 potential_iid_test_set_uids.append(uid)
 
         potential_iid_test_set_uids = np.array(potential_iid_test_set_uids)
@@ -61,7 +98,7 @@ class ManualVirtualReactionSplit(VirtualReactionSplit):
     
     def _get_virtual_test_set_uids(
         self,
-        substrates: List[str],
+        products: List[str],
         uids: List[int],
         simulation_idxs: List[int]
     ) -> List[int]:
@@ -69,7 +106,7 @@ class ManualVirtualReactionSplit(VirtualReactionSplit):
         Returns the virtual test set, just some simulated test set
         """
         potential_virtual_test_set_uid = []
-        for _, uid, simulation_idx in zip(substrates, uids, simulation_idxs):
+        for _, uid, simulation_idx in zip(products, uids, simulation_idxs):
             if simulation_idx != 0:
                 potential_virtual_test_set_uid.append(uid)
 
@@ -79,7 +116,7 @@ class ManualVirtualReactionSplit(VirtualReactionSplit):
     
     def _get_excluded_set_uids(
         self,
-        substrates: List[str],
+        products: List[str],
         uids: List[int],
         simulation_idxs: List[int],
         data: pd.DataFrame
@@ -90,9 +127,9 @@ class ManualVirtualReactionSplit(VirtualReactionSplit):
         """
         excluded_set_uids = []
         if not self.transductive:
-            for substrate, uid, simulation_idx in zip(substrates, uids, simulation_idxs):
-                if substrate in self.ood_test_substrates and simulation_idx != 0:
-                    r_idx = data[data['uid'] == uid][0]['reaction_idx']
+            for product, uid, simulation_idx in zip(products, uids, simulation_idxs):
+                if product in self._test_products and simulation_idx != 0:
+                    r_idx = data[data['uid'] == uid]['reaction_idx'].values[0]
                     if r_idx in data[data['simulation_idx'] == 0]['reaction_idx'].values:
                         excluded_set_uids.append(uid)
         return np.array(excluded_set_uids)
@@ -108,13 +145,14 @@ class ManualVirtualReactionSplit(VirtualReactionSplit):
         train, val & test set.
         """
         np.random.seed(random_seed)
+        self._set_ood_test_compounds_from_clusters(data)
 
         # get test / excluded IDs
-        substrates, uids, simulation_idxs = data['substrates'].values, data['uid'].values, data['simulation_idx'].values
-        ood_test_set_uids = self._get_ood_test_set_uids(substrates, uids, simulation_idxs)
-        iid_test_set_uids = self._get_iid_test_set_uids(substrates, uids, simulation_idxs)
-        virtual_test_set_uids = self._get_virtual_test_set_uids(substrates, uids, simulation_idxs)
-        excluded_set_uids = self._get_excluded_set_uids(substrates, uids, simulation_idxs, data)
+        products, uids, simulation_idxs = data['products'].values, data['uid'].values, data['simulation_idx'].values
+        ood_test_set_uids = self._get_ood_test_set_uids(products, uids, simulation_idxs)
+        iid_test_set_uids = self._get_iid_test_set_uids(products, uids, simulation_idxs)
+        virtual_test_set_uids = self._get_virtual_test_set_uids(products, uids, simulation_idxs)
+        excluded_set_uids = self._get_excluded_set_uids(products, list(filter(lambda x: x not in virtual_test_set_uids, uids)), simulation_idxs, data)
 
         left_over_uids = np.array([
             id for id in uids if (

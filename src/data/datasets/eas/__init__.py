@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Tuple, Union
+from typing import List, Literal, Tuple, Union
 
 from src.data.datasets.dataset import Dataset
 from src.data.datasets.simulated_dataset import SimulatedDataset
@@ -8,10 +8,15 @@ class SimulatedEASDataset(SimulatedDataset):
 
     def __init__(
         self, 
-        csv_file_path: str, 
-        n_simulations: int = 1
+        folder_path: str, 
+        n_simulations: int = 1,
+        simulation_type: Literal['smiles', 'index_feature', 'outcome_feature'] = 'index_feature',
     ) -> None:
-        super().__init__(csv_file_path, n_simulations)
+        super().__init__(
+            folder_path=folder_path, 
+            n_simulations=n_simulations,
+            simulation_type=simulation_type
+        )
 
     def _select_reaction_to_simulate(
         self,

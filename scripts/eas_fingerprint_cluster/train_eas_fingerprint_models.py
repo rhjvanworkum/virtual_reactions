@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
 
     dataset = Dataset(
-        csv_file_path=f"eas/fingerprint_splits/split_{split_idx}.csv"
+        folder_path=f"eas/fingerprint_splits/split_{split_idx}/"
     )
     source_data = dataset.load()
 

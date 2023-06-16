@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
 
     dataset = XtbSimulatedEasDataset(
-        csv_file_path="eas/xtb_simulated_eas.csv"
+        folder_path="eas/xtb_simulated_eas/"
     )
     # df = dataset.load()
     df = dataset.load(

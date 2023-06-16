@@ -26,7 +26,7 @@ if __name__ == "__main__":
     }
 
     dataset = Dataset(
-        csv_file_path="da/global_simulated_DA_literature.csv"
+        folder_path="da/global_simulated_DA_literature/"
     )
     source_data = dataset.load()
     

@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
 
     dataset = Dataset(
-        csv_file_path="eas/eas_dataset.csv"
+        folder_path="eas/eas_dataset/"
     )
     source_data = dataset.load()
 

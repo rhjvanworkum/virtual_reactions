@@ -2,12 +2,13 @@ import os
 
 from src.chemprop.train_vr import train_and_evaluate_chemprop_vr_model
 from src.data.datasets.dataset import Dataset
+from src.data.splits.fingerprint_vr_split import FingerprintVirtualReactionSplit
 from src.data.splits.hetero_cycle_split import HeteroCycleSplit
 
 
 if __name__ == "__main__":
     n_replications = 3
-    name = 'baseline_model'
+    name = 'baseline_model_Butina=25'
     project = 'vr'
     use_features = True
     use_wandb = True
@@ -23,13 +24,21 @@ if __name__ == "__main__":
     }
 
     dataset = Dataset(
-        csv_file_path="eas/eas_dataset.csv"
+        folder_path="eas/eas_dataset/",
+        simulation_type='index_feature'
     )
     source_data = dataset.load()
     
-    dataset_split = HeteroCycleSplit(
+    # dataset_split = HeteroCycleSplit(
+    #     train_split=0.9,
+    #     val_split=0.1,
+    #     transductive=True
+    # )
+    dataset_split = FingerprintVirtualReactionSplit(
         train_split=0.9,
         val_split=0.1,
+        clustering_method='Butina',
+        min_cluster_size=25,
         transductive=True
     )
 

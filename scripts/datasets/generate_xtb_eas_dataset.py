@@ -10,11 +10,11 @@ from src.data.datasets.eas.xtb_simulated_eas_dataset import XtbSimulatedEasDatas
 n_processes = 14
 
 source_dataset = Dataset(
-    csv_file_path="eas_dataset.csv"
+    folder_path="eas/eas_dataset/"
 )
 
 dataset = XtbSimulatedEasDataset(
-    csv_file_path="xtb_simulated_eas.csv"
+    folder_path="eas/xtb_simulated_eas/"
 )
 
 dataset.generate(source_dataset, n_cpus=n_processes)

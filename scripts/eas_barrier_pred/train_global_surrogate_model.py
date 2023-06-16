@@ -39,7 +39,7 @@ if __name__ == "__main__":
     }
 
     dataset = Dataset(
-        csv_file_path="eas/xtb_simulated_eas_20pct_class.csv"
+        folder_path="eas/xtb_simulated_eas_20pct_class/"
     )
     source_data = dataset.load()
 

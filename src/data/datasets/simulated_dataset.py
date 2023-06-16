@@ -10,11 +10,15 @@ class SimulatedDataset(Dataset):
 
     def __init__(
         self, 
-        csv_file_path: str,
+        folder_path: str,
         n_simulations: int = 1,
-        n_substrates: int = 1
+        n_substrates: int = 1,
+        simulation_type: Literal['smiles', 'index_feature', 'outcome_feature'] = 'index_feature',
     ) -> None:
-        super().__init__(csv_file_path=csv_file_path)
+        super().__init__(
+            folder_path=folder_path,
+            simulation_type=simulation_type
+        )
         self.n_simulations = n_simulations
         self.n_substrates = n_substrates
 
@@ -45,7 +49,7 @@ class SimulatedDataset(Dataset):
         source_dataset: Dataset,
         n_cpus: int,
     ) -> None:
-        source_data = pd.read_csv(source_dataset.csv_file_path)
+        source_data = pd.read_csv(source_dataset.dataset_path)
         substrates, products, solvents, compute_product_only_list, reaction_idxs = self._select_reaction_to_simulate(source_dataset)
 
         uids = []
@@ -81,7 +85,7 @@ class SimulatedDataset(Dataset):
         })
 
         df = pd.concat([source_data, df])
-        df.to_csv(self.csv_file_path)
+        df.to_csv(self.dataset_path)
 
         self.generated = True
 
@@ -90,7 +94,7 @@ class SimulatedDataset(Dataset):
         aggregation_mode: Literal["avg", "low"] = "low",
         margin: float = 0.0,
     ) -> List[pd.DataFrame]:
-        dataframe = pd.read_csv(self.csv_file_path)
+        dataframe = pd.read_csv(self.dataset_path)
         source_dataframe = dataframe[dataframe['simulation_idx'] == 0]
         
         dataframes = [source_dataframe]
@@ -141,7 +145,7 @@ class SimulatedDataset(Dataset):
         aggregation_mode: Literal["avg", "low"] = "low",
     ) -> List[pd.DataFrame]:
         # load dataframe
-        source_dataframe = pd.read_csv(self.csv_file_path)
+        source_dataframe = pd.read_csv(self.dataset_path)
 
         dataframes = []
         for simulation_idx in range(self.n_simulations + 1):

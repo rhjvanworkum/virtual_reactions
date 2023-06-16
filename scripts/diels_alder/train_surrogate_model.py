@@ -20,61 +20,61 @@ if __name__ == "__main__":
     evaluate_on_dataset = True
     save_simulated_dataset = True
 
-    # training_args = {
-    #     # 'hidden_size': 512,
-    #     # 'ffn_hidden_size': 512,
-    #     # 'depth': 3,
-    #     # 'ffn_num_layers': 3,
-    #     'epochs': 100,
-    #     # 'init_lr': 1e-4,
-    #     # 'batch_size': 16,
-    # }
+    training_args = {
+        # 'hidden_size': 512,
+        # 'ffn_hidden_size': 512,
+        # 'depth': 3,
+        # 'ffn_num_layers': 3,
+        'epochs': 100,
+        # 'init_lr': 1e-4,
+        # 'batch_size': 16,
+    }
 
-    # prediction_args = {
-    # }
+    prediction_args = {
+    }
 
-    # dataset = Dataset(
-    #     csv_file_path="da/reaxys_rps.csv"
-    # )
-    # source_data = dataset.load()
+    dataset = Dataset(
+        folder_path="da/reaxys_rps/"
+    )
+    source_data = dataset.load()
 
-    # dataset_split = RandomSplit(
-    #     train_split=0.9,
-    #     val_split=0.1,
-    # )
+    dataset_split = RandomSplit(
+        train_split=0.9,
+        val_split=0.1,
+    )
 
-    # base_dir = os.path.join('./experiments', name)
-    # if not os.path.exists(base_dir):
-    #     os.makedirs(base_dir)
-
-
-    # if mode == "regression":
-    #     metrics = [
-    #         'mae', 'mse', 'pearson'
-    #     ]
-    # else:
-    #     metrics = []
+    base_dir = os.path.join('./experiments', name)
+    if not os.path.exists(base_dir):
+        os.makedirs(base_dir)
 
 
-    # train_and_evaluate_chemprop_model(
-    #     use_wandb=use_wandb,
-    #     wandb_name=name,
-    #     wandb_project_name=project,
-    #     n_replications=n_replications,
-    #     use_features=use_features,
-    #     metrics=metrics,
-    #     task=mode,
-    #     dataset=dataset,
-    #     source_data=source_data,
-    #     dataset_split=dataset_split,
-    #     base_dir=base_dir,
-    #     other_training_args=training_args,
-    #     other_prediction_args=prediction_args
-    # )
+    if mode == "regression":
+        metrics = [
+            'mae', 'mse', 'pearson'
+        ]
+    else:
+        metrics = []
+
+
+    train_and_evaluate_chemprop_model(
+        use_wandb=use_wandb,
+        wandb_name=name,
+        wandb_project_name=project,
+        n_replications=n_replications,
+        use_features=use_features,
+        metrics=metrics,
+        task=mode,
+        dataset=dataset,
+        source_data=source_data,
+        dataset_split=dataset_split,
+        base_dir=base_dir,
+        other_training_args=training_args,
+        other_prediction_args=prediction_args
+    )
 
     if evaluate_on_dataset:
         dataset = Dataset(
-            csv_file_path="da/DA_literature.csv"
+            folder_path="da/DA_literature/"
         )
         source_data = dataset.load()
 
@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
 
         dataset = Dataset(
-            csv_file_path="da/DA_literature_tight.csv"
+            folder_path="da/DA_literature_tight/"
         )
         source_data = dataset.load()
 

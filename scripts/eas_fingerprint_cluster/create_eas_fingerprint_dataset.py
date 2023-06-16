@@ -10,7 +10,7 @@ if __name__ == "__main__":
     output_dataset_name = './data/eas/eas_dataset_fingerprint_simulated_whole.csv'
 
     dataset = Dataset(
-        csv_file_path="eas/eas_dataset.csv"
+        folder_path="eas/eas_dataset/"
     )
     source_data = dataset.load()
 
@@ -18,13 +18,13 @@ if __name__ == "__main__":
         # data_path = f'./data/eas/fingerprint_splits/split_{i}_chemprop.csv'
         # dataset_path = f'eas/fingerprint_splits/split_{i}.csv'
         data_path = f'./data/eas/eas_dataset_chemprop.csv'
-        dataset_path = f'eas/eas_dataset.csv'
+        dataset_path = f'eas/eas_dataset/'
 
         pred_path = f'./test.csv'
         model_path = f'./experiments/fingeprint_split_{i}/fold_0/model_0/model.pt'
 
         atom_descriptor_path = f'./test.npz'
-        _dataset = Dataset(csv_file_path=dataset_path)
+        _dataset = Dataset(folder_path=dataset_path)
         feat = _dataset.load_chemprop_features()
         np.savez(atom_descriptor_path, *feat)
 

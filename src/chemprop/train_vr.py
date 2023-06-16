@@ -31,9 +31,9 @@ def train_and_evaluate_chemprop_vr_model(
     scheduler_fn: Optional[Callable] = None
 ) -> None:
     max_simulation_idx = int(max(source_data['simulation_idx'].values) + 1)
-
+    
     # generate dataset if needed
-    dataset.generate_chemprop_dataset(force=force_dataset_generation, simulation_idx_as_features=use_features)
+    dataset.generate_chemprop_dataset(force=force_dataset_generation)
 
     # construct evaluation metrics
     tot_train_auc, tot_val_auc, tot_ood_test_auc, tot_iid_test_auc, tot_virtual_test_auc = [], [], [], [], []
@@ -109,12 +109,12 @@ def train_and_evaluate_chemprop_vr_model(
                     labels = true_df[true_df['simulation_idx'] == simulation_idx]['label'].values
                     preds = pred_df[pred_df['simulation_idx'] == simulation_idx]['label'].values
                     if len(labels) > 0 and len(preds) > 0:
-                        auc_list[simulation_idx].append(
-                            roc_auc_score(
-                                labels,
-                                preds
-                            )
-                        )
+                        try:
+                            score = roc_auc_score(labels, preds)
+                        except:
+                            print('AUROC failed!!')
+                            score = 0
+                        auc_list[simulation_idx].append(score)
                     else:
                         auc_list[simulation_idx].append(0)
 

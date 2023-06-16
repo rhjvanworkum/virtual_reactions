@@ -23,9 +23,9 @@ if __name__ == "__main__":
         # 'init_lr': 1e-3,
         # 'batch_size': 50,
     }
-
+    
     dataset = Dataset(
-        csv_file_path="eas/eas_dataset.csv"
+        folder_path="eas/eas_dataset/"
     )
     source_data = dataset.load()
 

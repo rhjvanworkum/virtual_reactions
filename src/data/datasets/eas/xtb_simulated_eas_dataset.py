@@ -1,6 +1,6 @@
 from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
-from typing import List, Union, Any
+from typing import List, Literal, Union, Any
 
 from src.data.datasets.eas import SimulatedEASDataset
 from src.methods import XtbMethod
@@ -18,11 +18,13 @@ class XtbSimulatedEasDataset(SimulatedEASDataset):
 
     def __init__(
         self, 
-        csv_file_path: str, 
+        folder_path: str, 
+        simulation_type: Literal['smiles', 'index_feature', 'outcome_feature'] = 'index_feature',
     ) -> None:
         super().__init__(
-            csv_file_path=csv_file_path, 
-            n_simulations=1
+            folder_path=folder_path, 
+            n_simulations=1,
+            simulation_type=simulation_type
         )
 
     def _simulate_reactions(

@@ -19,7 +19,3 @@
 # )
 
 # dataset_split.generate_splits(source_data)
-
-print(
-    (0.94892 + 0.94394 + 0.94643) / 3
-)

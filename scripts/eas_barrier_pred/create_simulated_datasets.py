@@ -66,7 +66,7 @@ if __name__ == "__main__":
     # # make B2R2 KRR simulated dataset
     # t = time.time()
     # dataset = Dataset(
-    #     csv_file_path="eas/eas_dataset.csv"
+    #     folder_path="eas/eas_dataset/"
     # )
     # source_data = dataset.load()
     # test_features, elements = featurize(
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     # t = time.time()
     # dataset = Dataset(
-    #     csv_file_path="eas/xtb_simulated_eas_20pct.csv"
+    #     folder_path="eas/xtb_simulated_eas_20pct/"
     # )
     # source_data = dataset.load()
 
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     # print(f'KRR fitted in {time.time() - t}')
 
     # dataset = Dataset(
-    #     csv_file_path="eas/eas_dataset.csv"
+    #     folder_path="eas/eas_dataset/"
     # )
     # source_data = dataset.load()
     # new_data = source_data.copy()
@@ -121,9 +121,8 @@ if __name__ == "__main__":
 
     # # make global simulated dataset
     # dataset = Dataset(
-    #     csv_file_path="eas/eas_dataset.csv"
+    #     folder_path="eas/eas_dataset/"
     # )
-    # dataset.generate_chemprop_dataset(simulation_idx_as_features=True)
     # source_data = dataset.load()
     # feat = dataset.load_chemprop_features()
 
@@ -147,14 +146,13 @@ if __name__ == "__main__":
 
     # make local simulated dataset
     dataset = Dataset(
-        csv_file_path="eas/eas_dataset.csv"
+        folder_path="eas/eas_dataset/"
     )
     dataframes = [dataset.load()]
     for i in range(1):
         dataset = Dataset(
-            csv_file_path=f"eas/fingerprint_splits/split_{i}.csv"
+            folder_path=f"eas/fingerprint_splits/split_{i}/"
         )
-        dataset.generate_chemprop_dataset(simulation_idx_as_features=True)
         source_data = dataset.load()
         feat = dataset.load_chemprop_features()
 
