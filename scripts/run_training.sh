@@ -2,12 +2,15 @@
 
 source env.sh
 
+
+python scripts/eas/train_eas_fingerprint_models.py
+
 ## DA dataset
 # python scripts/diels_alder/train_model.py
 # python scripts/diels_alder/train_surrogate_model.py
 
 ## FCA dataset
-python scripts/fca/train_surrogate_model.py
+# python scripts/fca/train_surrogate_model.py
 
 ## EAS barrier pred
 # python scripts/eas_barrier_pred/train_global_surrogate_model.py
