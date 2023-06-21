@@ -12,7 +12,7 @@ from src.chemprop.metrics import mean_absolute_error, mean_squared_error, pearso
 
 if __name__ == "__main__":
     n_replications = 1
-    name = 'reaxys_rps_fca_regression_tt'
+    name = 'reaxys_rps_fca_regression_new'
     project = 'vr-fca-surrogate'
     use_features = False # turn this off when using the pretrained Grambow model
     use_wandb = True
@@ -22,21 +22,21 @@ if __name__ == "__main__":
 
     training_args = {
         # 'hidden_size': 64,
-        'ffn_hidden_size': 64,
+        # 'ffn_hidden_size': 64,
         # 'depth': 3,
         # 'ffn_num_layers': 3,
         'epochs': 100,
-        'init_lr': 1e-4,
+        'init_lr': 1e-3,
         # 'batch_size': 16,
-        'checkpoint_paths': ['./data/models/grambow_pre_100.pt'],
-        'exclude_parameters': ['readout'],
+        # 'checkpoint_paths': ['./data/models/grambow_pre_100.pt'],
+        # 'exclude_parameters': ['readout'],
     }
 
     prediction_args = {
     }
 
     dataset = Dataset(
-        folder_path="fca/reaxys_test/",
+        folder_path="fca/reaxys_test_new/",
         simulation_type='index_feature'
     )
     source_data = dataset.load()

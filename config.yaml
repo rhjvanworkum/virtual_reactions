@@ -1,0 +1,21 @@
+# experiment details
+name: "test_experiment"
+project: "test_project"
+use_wandb: False
+
+# run details
+n_replications: 5
+epochs: 100
+use_features: True
+
+# dataset
+dataset_type: dataset
+folder_path: "eas/eas_dataset"
+simulation_type: "index_feature"
+
+# split
+split_type: random
+transductive: True
+clustering_method: Butina
+min_cluster_size: 2
+n_ood_test_compounds: 100

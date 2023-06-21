@@ -152,6 +152,8 @@ def train_and_evaluate_chemprop_vr_model(
     print(f'Sim idx: {", ".join([str(i) for i in range(max_simulation_idx)])}')
     print(f'AUROC  : {", ".join([str(round(i, 3)) for i in simulation_auc])} \n\n')
 
+    print(tot_ood_test_auc)
+    
     print(f'Mean Model AUROC:')
     print(f'Train       : {round(np.mean(tot_train_auc), 3)} ({", ".join([str(round(np.mean(train_auc[i]), 3)) for i in range(max_simulation_idx)])})')
     print(f'Val         : {round(np.mean(tot_val_auc), 3)} ({", ".join([str(round(np.mean(val_auc[i]), 3)) for i in range(max_simulation_idx)])})')

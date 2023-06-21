@@ -8,7 +8,22 @@ from src.data.splits.fingerprint_similarity_split import FingerprintSimilaritySp
 from src.data.splits.virtual_reaction_split import VirtualReactionSplit
 
 
-@gin.configurable
+def select_clusters(
+    clusters: List[List[str]],
+    n_compounds: int,
+) -> List[List[str]]:
+    current_clusters = list(clusters).copy()
+    selected_clusters = []
+
+    while sum(len(clu) for clu in selected_clusters) < n_compounds:
+        idx = random.sample(np.arange(len(current_clusters)).tolist(), 1)[0]
+
+        if sum(len(clu) for clu in selected_clusters) + len(current_clusters[idx]) <= n_compounds:
+            selected_clusters.append(current_clusters.pop(idx))
+
+    return selected_clusters
+
+
 class FingerprintVirtualReactionSplit(VirtualReactionSplit):
 
     def __init__(
@@ -22,6 +37,7 @@ class FingerprintVirtualReactionSplit(VirtualReactionSplit):
         n_clusters: int = 6,
         n_ood_test_clusters: Optional[int] = None,
         min_cluster_size: Optional[int] = None,
+        n_ood_test_compounds: Optional[int] = None
     ) -> None:
         super().__init__(transductive)
         self.train_split = train_split
@@ -33,10 +49,11 @@ class FingerprintVirtualReactionSplit(VirtualReactionSplit):
 
         self.n_ood_test_clusters = n_ood_test_clusters
         self.min_cluster_size = min_cluster_size
-        if self.n_ood_test_clusters is not None and self.min_cluster_size is not None:
-            raise ValueError("Can Only set either n ood clusters or min cluster size")
-        if self.n_ood_test_clusters is None and self.min_cluster_size is None:
-            raise ValueError("Must set either n ood clusters or min cluster size") 
+        self.n_ood_test_compounds = n_ood_test_compounds
+        # if self.n_ood_test_clusters is not None and self.min_cluster_size is not None:
+        #     raise ValueError("Can Only set either n ood clusters or min cluster size")
+        # if self.n_ood_test_clusters is None and self.min_cluster_size is None:
+        #     raise ValueError("Must set either n ood clusters or min cluster size") 
 
         self.fingerprint_split = FingerprintSimilaritySplit(
             clustering_method=clustering_method,
@@ -58,10 +75,14 @@ class FingerprintVirtualReactionSplit(VirtualReactionSplit):
         
         if self.min_cluster_size is not None:
             test_cluster_idxs = [i for i, cluster in enumerate(clusters) if len(cluster) < self.min_cluster_size]
+            test_clusters = [clusters[i] for i in test_cluster_idxs]
         elif self.n_ood_test_clusters is not None:
             test_cluster_idxs = random.sample(np.arange(len(clusters)).tolist(), self.n_ood_test_clusters)
+            test_clusters = [clusters[i] for i in test_cluster_idxs]
+        elif self.n_ood_test_compounds is not None:
+            test_clusters = select_clusters(clusters, self.n_ood_test_compounds)
 
-        self._test_products = pd.concat([clusters[i] for i in test_cluster_idxs])['products'].values.tolist()
+        self._test_products = pd.concat(test_clusters)['products'].values.tolist()
 
     def _get_ood_test_set_uids(
         self,
