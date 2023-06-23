@@ -2,8 +2,9 @@
 
 source env.sh
 
+# python scripts/ani-cxx-new/train_model.py
 
-python scripts/eas/train_eas_fingerprint_models.py
+# python scripts/eas/train_eas_fingerprint_models.py
 
 ## DA dataset
 # python scripts/diels_alder/train_model.py

@@ -1,5 +1,5 @@
 import os
-from src.args import parse_config_from_command_line
+from src.args import parse_chemprop_config_from_command_line
 
 from src.chemprop.train_vr import train_and_evaluate_chemprop_vr_model
 from src.data.datasets.dataset import Dataset
@@ -18,7 +18,7 @@ dataset_class_dict = {
 
 
 if __name__ == "__main__":
-    config = parse_config_from_command_line()
+    config = parse_chemprop_config_from_command_line()
     
     training_args = {
         'epochs': config.get('epochs'),
