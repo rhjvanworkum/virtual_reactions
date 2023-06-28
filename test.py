@@ -1,21 +1,50 @@
-# # sbatch -N 1 --ntasks-per-node=8 --gres=gpu:2 --partition zen3_0512_a100x2 --qos zen3_0512_a100x2 --output=job_%A.out scripts/submit_vr_training.sh
+import os
+import h5py as h5
+import numpy as np
+from typing import List, Dict
+from ase import Atoms
+from schnetpack.data import ASEAtomsData
+import yaml
 
-# # sbatch -N 1 --ntasks-per-node=16 --gres=gpu:2 --partition zen2_0256_a40x2 --qos zen2_0256_a40x2 --output=job_%A.out scripts/submit_vr_training.sh
 
-# from src.data.datasets.dataset import Dataset
-# from src.data.splits.da_split import DASplit
+ANI_DATASET_FILE_PATH = "/home/rhjvanworkum/ani1x-release.h5"
+CC_ENERGY_KEY = "ccsd(t)_cbs.energy"
+DFT_ENERGY_KEY = "wb97x_dz.energy"
+DFT_FORCES_KEY = "wb97x_dz.forces"
+Z_KEY = "atomic_numbers"
+R_KEY = "coordinates"
+KCAL_MOL_HARTREE = 627.5096
 
-# dataset = Dataset(
-#     csv_file_path="da/DA_literature.csv"
-# )
-# source_data = dataset.load()
+# ani dataset
+ani_dataset = h5.File(ANI_DATASET_FILE_PATH)
 
-# dataset_split = DASplit(
-#     train_split=0.9,
-#     val_split=0.1,
-#     clustering_method='Butina',
-#     min_cluster_size=4,
-#     exclude_simulations=True
-# )
+a = np.array(ani_dataset['O2'][DFT_FORCES_KEY][:][0])
+print(a, a.shape)
 
-# dataset_split.generate_splits(source_data)
+
+
+# import numpy as np
+
+# split = np.load('./data/ani-cxx/experiment_2/splits/cc_5_dft_0.npz')
+# base = len(split['train_idx']) + len(split['val_idx'])
+
+# split = np.load('./data/ani-cxx/experiment_2/splits/cc_5_dft_10.npz')
+# print(len(split['train_idx']) + len(split['val_idx']) - base)
+# split = np.load('./data/ani-cxx/experiment_2/splits/cc_5_dft_20.npz')
+# print(len(split['train_idx']) + len(split['val_idx']) - base)
+# split = np.load('./data/ani-cxx/experiment_2/splits/cc_5_dft_30.npz')
+# print(len(split['train_idx']) + len(split['val_idx']) - base)
+
+# split = np.load('./data/ani-cxx/experiment_2/splits/cc_5_mol_sim_10.npz')
+# print(len(split['train_idx']) + len(split['val_idx']) - base)
+# split = np.load('./data/ani-cxx/experiment_2/splits/cc_5_mol_sim_20.npz')
+# print(len(split['train_idx']) + len(split['val_idx']) - base)
+# split = np.load('./data/ani-cxx/experiment_2/splits/cc_5_mol_sim_30.npz')
+# print(len(split['train_idx']) + len(split['val_idx']) - base)
+
+# split = np.load('./data/ani-cxx/experiment_2/splits/cc_5_mol_sim_small_10.npz')
+# print(len(split['train_idx']) + len(split['val_idx']) - base)
+# split = np.load('./data/ani-cxx/experiment_2/splits/cc_5_mol_sim_small_20.npz')
+# print(len(split['train_idx']) + len(split['val_idx']) - base)
+# split = np.load('./data/ani-cxx/experiment_2/splits/cc_5_mol_sim_small_30.npz')
+# print(len(split['train_idx']) + len(split['val_idx']) - base)

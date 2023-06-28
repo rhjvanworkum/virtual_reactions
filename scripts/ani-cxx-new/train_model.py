@@ -1,8 +1,9 @@
 import os
 import logging
 import pytorch_lightning
-
+from scipy.stats import pearsonr
 import schnetpack as spk
+from schnetpack.task import ModelOutput
 import schnetpack.transform as trn
 from schnetpack.data.datamodule import AtomsDataModule
 from pytorch_lightning.loggers import WandbLogger
@@ -16,6 +17,24 @@ from src.schnetpack.simulated_atoms_datamodule import SimulatedAtomsDataModule
 from src.schnetpack.task import SimulatedAtomisticTask, SimulatedModelOutput
 
 
+# def corrcoef(target, pred):
+#     pred_n = pred - pred.mean()
+#     target_n = target - target.mean()
+#     pred_n = pred_n / pred_n.norm()
+#     target_n = target_n / target_n.norm()
+#     return (pred_n * target_n).sum()
+
+# class PearsonCorrLoss(torch.nn.Module):
+#     def __init__(self) -> None:
+#         super().__init__()
+
+#     def forward(self, x, y):
+#         pred = torchsort.soft_rank(
+#             pred,
+#         )
+#         return corrcoef(x, y / y.shape[-1])
+
+
 if __name__ == "__main__":
     config = parse_schnet_config_from_command_line()
 
@@ -24,20 +43,21 @@ if __name__ == "__main__":
     else:
         device = torch.device('cpu')
 
-
     ### dataset
     dataset = SimulatedAtomsDataModule(
         datapath=config.get('dataset_path'),
         split_file=config.get('split_file_path'),
         batch_size=config.get('batch_size'),
         transforms=[
-            trn.ASENeighborList(cutoff=config.get('cutoff')),
+            trn.ASENeighborList(cutoff=5.0),
             trn.CastTo32(),
+            trn.RemoveOffsets('energy', remove_mean=True, remove_atomrefs=False),
+            # trn.ScaleProperty(input_key='energy', target_key='energy', output_key='energy', scale=torch.Tensor([1e4])),
             SimulationIdxPerAtom()
         ],
         num_workers=2,
         pin_memory=True, # set to false, when not using a GPU
-        load_properties=['energy', 'simulation_idx'], #only load U0 property
+        load_properties=['energy', 'forces', 'simulation_idx'], #only load U0 property
     )
     dataset.prepare_data()
     dataset.setup()
@@ -57,28 +77,37 @@ if __name__ == "__main__":
         sim_embedding_dim=config.get('sim_embedding_dim'), 
         output_key='energy'
     )
+    pred_forces = spk.atomistic.Forces(calc_forces=True, energy_key='energy', force_key='forces')
     nnpot = spk.model.NeuralNetworkPotential(
         representation=schnet,
         input_modules=[pairwise_distance],
-        output_modules=[pred_energy],
+        output_modules=[pred_energy, pred_forces],
         postprocessors=[
             trn.CastTo64(),
-            trn.AddOffsets('energy', add_mean=True, add_atomrefs=False)
         ]
     )
 
-    output = SimulatedModelOutput(
+    energy_output = SimulatedModelOutput(
         device=device,
         name='energy',
         loss_fn=torch.nn.MSELoss(),
-        loss_weight=1.,
+        loss_weight=0.01,
         metrics={
             "MAE": torchmetrics.MeanAbsoluteError()
         }
     )
+    forces_output = ModelOutput(
+        name='forces',
+        loss_fn=torch.nn.MSELoss(),
+        loss_weight=0.99,
+        metrics={
+            "MAE": torchmetrics.MeanAbsoluteError()
+        }
+    )
+
     model = SimulatedAtomisticTask(
         model=nnpot,
-        outputs=[output],
+        outputs=[energy_output, forces_output],
         optimizer_cls=torch.optim.Adam,
         optimizer_args={"lr": config.get('lr')},
         scheduler_cls=torch.optim.lr_scheduler.ReduceLROnPlateau,

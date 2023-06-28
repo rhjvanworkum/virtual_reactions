@@ -24,7 +24,7 @@ from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem.rdPartialCharges import ComputeGasteigerCharges
 
-from src.utils import Atom, EditedRDKitToolkitWrapper, write_xyz_file
+from src.utils import Atom, write_xyz_file # , EditedRDKitToolkitWrapper
 
 def _compute_rdkit_partial_charges(
     mol: Chem.Mol
@@ -87,7 +87,8 @@ class Compound:
         self.has_openmm_compatability = has_openmm_compatability
         if self.has_openmm_compatability:
             smiles = Chem.MolToSmiles(Chem.RemoveHs(self.rdkit_mol))
-            self.ff_mol = EditedRDKitToolkitWrapper().from_smiles(smiles, allow_undefined_stereo=True)
+            # self.ff_mol = EditedRDKitToolkitWrapper().from_smiles(smiles, allow_undefined_stereo=True)
+            self.ff_mol = None
             self.ff_mol.partial_charges = _compute_rdkit_partial_charges(
                 Chem.AddHs(self.rdkit_mol)
             )

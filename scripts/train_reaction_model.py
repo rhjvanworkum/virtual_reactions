@@ -22,6 +22,8 @@ if __name__ == "__main__":
     
     training_args = {
         'epochs': config.get('epochs'),
+        'hidden_size': 64,
+        'ffn_hidden_size': 64,
     }
 
     # create and load dataset class

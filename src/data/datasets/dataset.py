@@ -111,8 +111,10 @@ class Dataset:
                 desc = []
                 for column in feature_df.columns:
                     if 'descriptor' in column:
-                        desc.extend(ast.literal_eval(feature_df[feature_df['smiles'] == smi][column].values[0]))
-                descriptors.append(np.array(desc))
+                        descriptor = ast.literal_eval(feature_df[feature_df['smiles'] == smi][column].values[0])
+                        desc.append(descriptor)
+                desc = np.array(desc).T
+                descriptors.append(desc)
             return descriptors
         else:
             raise ValueError("Chemprop Feature Dataset is not generated yet!")

@@ -46,7 +46,7 @@ class SingleFFSimulatedEasDataset(SimulatedEASDataset):
             'substrate_smiles': substrate.split('.')[0], 
             'product_smiles': product,
             'solvent': solvent,
-            'method': ForceFieldMethod(ForceField("openff-2.0.0.offxml")),
+            'method': ForceFieldMethod(), #ForceFieldMethod(ForceField("openff-2.0.0.offxml")),
             'has_openmm_compatability': True,
             'compute_product_only': compute_product_only
 

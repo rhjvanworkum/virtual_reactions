@@ -2,7 +2,11 @@
 
 source env.sh
 
-# python scripts/ani-cxx-new/train_model.py
+# python scripts/eas/train_model.py --name ma_testt --project ma_test_small --dataset_type dataset \
+#     --folder_path ma/ma_dataset/  --simulation_type index_feature --split_type fp_vr --transductive True \
+#     --clustering_method Butina --n_ood_test_compounds 20 --n_replications 3
+
+python scripts/snar/train_surrogate_model.py
 
 # python scripts/eas/train_eas_fingerprint_models.py
 
