@@ -3,9 +3,9 @@ project: ani-cxx
 use_wandb: True
 n_devices: 1
 
-dataset_path: ./data/ani-cxx/experiment_2/dataset.db
-models_path: ./data/ani-cxx/experiment_2/models/
-split_file_path: ./data/ani-cxx/experiment_2/splits/cc_5_dft_30_ood.npz
+dataset_path: ./data/ani-cxx/experiment_3/dataset.db
+models_path: ./data/ani-cxx/experiment_3/models/
+split_file_path: ./data/ani-cxx/experiment_3/splits/cc_5_dft_30_ood.npz
 has_virtual_reactions: False
 n_simulations: 1
 

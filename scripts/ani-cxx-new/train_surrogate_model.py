@@ -39,7 +39,7 @@ if __name__ == "__main__":
         ],
         num_workers=2,
         pin_memory=True, # set to false, when not using a GPU
-        load_properties=['energy', 'simulation_idx'], #only load U0 property
+        load_properties=['energy', 'forces', 'simulation_idx'], #only load U0 property
     )
     dataset.prepare_data()
     dataset.setup()
@@ -59,10 +59,11 @@ if __name__ == "__main__":
         sim_embedding_dim=config.get('sim_embedding_dim'), 
         output_key='energy'
     )
+    pred_forces = spk.atomistic.Forces(calc_forces=True, energy_key='energy', force_key='forces')
     nnpot = spk.model.NeuralNetworkPotential(
         representation=schnet,
         input_modules=[pairwise_distance],
-        output_modules=[pred_energy],
+        output_modules=[pred_energy, pred_forces],
         postprocessors=[
             trn.CastTo64(),
         ]
@@ -72,7 +73,15 @@ if __name__ == "__main__":
         device=device,
         name='energy',
         loss_fn=torch.nn.MSELoss(),
-        loss_weight=1.0,
+        loss_weight=0.5,
+        metrics={
+            "MAE": torchmetrics.MeanAbsoluteError()
+        }
+    )
+    forces_output = ModelOutput(
+        name='forces',
+        loss_fn=torch.nn.MSELoss(),
+        loss_weight=0.5,
         metrics={
             "MAE": torchmetrics.MeanAbsoluteError()
         }
@@ -80,7 +89,7 @@ if __name__ == "__main__":
 
     model = SimulatedAtomisticTask(
         model=nnpot,
-        outputs=[energy_output],
+        outputs=[energy_output, forces_output],
         optimizer_cls=torch.optim.Adam,
         optimizer_args={"lr": config.get('lr')},
         scheduler_cls=torch.optim.lr_scheduler.ReduceLROnPlateau,

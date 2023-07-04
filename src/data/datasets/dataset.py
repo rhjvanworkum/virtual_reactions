@@ -182,7 +182,7 @@ class Dataset:
 
                 feat_dataframe = pd.DataFrame()
                 feat_dataframe['smiles'] = am_reaction_smiles_list
-                for sim_idx in range(1, max(dataframe['simulation_idx']) + 1):
+                for sim_idx in range(1, int(max(dataframe['simulation_idx']) + 1)):
                     selection = dataframe[dataframe['simulation_idx'] == sim_idx]
                     descriptors = []
                     for reaction_smiles in reaction_smiles_list:

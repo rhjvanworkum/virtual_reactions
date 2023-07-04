@@ -3,11 +3,13 @@ import pandas as pd
 import random
 from typing import List, Literal, Optional, Tuple, Union
 
+from autode.utils import timeout
+
 import numpy as np
 from src.data.splits.fingerprint_similarity_split import FingerprintSimilaritySplit
 from src.data.splits.virtual_reaction_split import VirtualReactionSplit
 
-
+@timeout(seconds=3, return_value=False)
 def select_clusters(
     clusters: List[List[str]],
     n_compounds: int,
@@ -20,6 +22,19 @@ def select_clusters(
 
         if sum(len(clu) for clu in selected_clusters) + len(current_clusters[idx]) <= n_compounds:
             selected_clusters.append(current_clusters.pop(idx))
+
+    return selected_clusters
+
+def _select_clusters(
+    clusters: List[List[str]],
+    n_compounds: int,
+) -> List[List[str]]:
+    current_clusters = list(clusters).copy()
+    selected_clusters = []
+
+    while sum(len(clu) for clu in selected_clusters) < n_compounds:
+        idx = random.sample(np.arange(len(current_clusters)).tolist(), 1)[0]
+        selected_clusters.append(current_clusters.pop(idx))
 
     return selected_clusters
 
@@ -80,7 +95,16 @@ class FingerprintVirtualReactionSplit(VirtualReactionSplit):
             test_cluster_idxs = random.sample(np.arange(len(clusters)).tolist(), self.n_ood_test_clusters)
             test_clusters = [clusters[i] for i in test_cluster_idxs]
         elif self.n_ood_test_compounds is not None:
-            test_clusters = select_clusters(clusters, self.n_ood_test_compounds)
+            i, test_clusters = 0, True
+            while (isinstance(test_clusters, bool) and i < 10):
+                test_clusters = select_clusters(clusters, self.n_ood_test_compounds)
+                i += 1
+                print(type(test_clusters))
+
+            if isinstance(test_clusters, bool):
+                test_clusters = _select_clusters(clusters, self.n_ood_test_compounds)
+
+            print(type(test_clusters))
 
         self._test_products = pd.concat(test_clusters)['products'].values.tolist()
 

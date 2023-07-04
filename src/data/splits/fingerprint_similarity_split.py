@@ -17,7 +17,7 @@ def fingerprint_to_numpy(fp):
 
 def get_butina_clusters(
     fingerprints: List[Any],
-    cutoff: float = 0.6
+    cutoff: float = 0.8
 ):
     dissimilarity_matrix = []
     for i in range(1, len(fingerprints)):

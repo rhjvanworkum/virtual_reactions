@@ -1,25 +1,36 @@
-import os
-import h5py as h5
 import numpy as np
-from typing import List, Dict
-from ase import Atoms
-from schnetpack.data import ASEAtomsData
-import yaml
+from ase.db import connect
+
+split = np.load('./data/ani-cxx/experiment_3/splits/cc_5_dft_0.npz')
+idxs = split["ood_test_idx"]
+
+with connect('./data/ani-cxx/experiment_3/dataset.db') as conn:
+    for idx in idxs:
+        row = conn.get(int(idx + 1))
+        # print(row)
+    
 
 
-ANI_DATASET_FILE_PATH = "/home/rhjvanworkum/ani1x-release.h5"
-CC_ENERGY_KEY = "ccsd(t)_cbs.energy"
-DFT_ENERGY_KEY = "wb97x_dz.energy"
-DFT_FORCES_KEY = "wb97x_dz.forces"
-Z_KEY = "atomic_numbers"
-R_KEY = "coordinates"
-KCAL_MOL_HARTREE = 627.5096
 
-# ani dataset
-ani_dataset = h5.File(ANI_DATASET_FILE_PATH)
 
-a = np.array(ani_dataset['O2'][DFT_FORCES_KEY][:][0])
-print(a, a.shape)
+
+# import seaborn as sn
+# import numpy as np
+# import matplotlib.pyplot as plt
+
+# data = [[ 5.43217366, 6.8014695 ,  6.8666586 ,  7.822923  , 5.83868584],
+#         [ 0.16579917, 3.17806352, 2.28671819 , 2.45360363 , 1.29563846],
+#         [ 4.93010134, 9.55179092, 10.68214974, 10.97396472, 2.9336707 ],
+#         [ 0.48410873, 1.68368126, 2.10387384 , 3.74912867 , 1.85132639],
+#         [ 1.01775229, 0.51558804, 1.30241114 , 1.27663514 , 1.08277127]]
+# data = np.array(data)
+# for i in range(5):
+#     data[i, :] = (data[i, :] - np.min(data[i, :])) / (np.max(data[i, :]) - np.min(data[i, :]))
+
+# sn.heatmap(data, annot=True, fmt='.2f', cmap='Blues')
+# plt.show()
+
+
 
 
 
