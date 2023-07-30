@@ -4,7 +4,7 @@ project: "test_project"
 use_wandb: False
 
 # run details
-n_replications: 5
+n_replications: 2
 epochs: 100
 use_features: True
 

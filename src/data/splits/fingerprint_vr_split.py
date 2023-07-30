@@ -95,14 +95,15 @@ class FingerprintVirtualReactionSplit(VirtualReactionSplit):
             test_cluster_idxs = random.sample(np.arange(len(clusters)).tolist(), self.n_ood_test_clusters)
             test_clusters = [clusters[i] for i in test_cluster_idxs]
         elif self.n_ood_test_compounds is not None:
-            i, test_clusters = 0, True
-            while (isinstance(test_clusters, bool) and i < 10):
-                test_clusters = select_clusters(clusters, self.n_ood_test_compounds)
-                i += 1
-                print(type(test_clusters))
+            # i, test_clusters = 0, True
+            # while (isinstance(test_clusters, bool) and i < 10):
+            #     test_clusters = select_clusters(clusters, self.n_ood_test_compounds)
+            #     i += 1
+            #     print(type(test_clusters))
 
-            if isinstance(test_clusters, bool):
-                test_clusters = _select_clusters(clusters, self.n_ood_test_compounds)
+            # if isinstance(test_clusters, bool):
+            #     test_clusters = _select_clusters(clusters, self.n_ood_test_compounds)
+            test_clusters = select_clusters(clusters, self.n_ood_test_compounds)
 
             print(type(test_clusters))
 

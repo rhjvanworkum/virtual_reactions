@@ -20,10 +20,13 @@ class Dataset:
         self,
         folder_path: str,
         simulation_type: Literal['smiles', 'index_feature', 'outcome_feature'] = 'index_feature',
+        data_weights: Optional[List[float]] = None,
     ) -> None:
         self.folder_path = os.path.join(os.environ['BASE_PATH'], f'data/{folder_path}')
         self.simulation_type = simulation_type
+        self.data_weights = data_weights
 
+        self.__use_data_weights = (data_weights is not None)
         self.__generated = False
         self.__chemprop_generated = False
 
@@ -58,6 +61,10 @@ class Dataset:
             return os.path.join(self.folder_path, 'chemprop_index_feat.csv')
         elif self.simulation_type == 'outcome_feature':
             return os.path.join(self.folder_path, 'chemprop_outcome_feat.csv')
+
+    @property
+    def chemprop_data_weights_path(self) -> str:
+        return os.path.join(self.folder_path, 'chemprop_data_weights.csv')
 
     def load(
         self,
@@ -126,75 +133,86 @@ class Dataset:
         """
         Generate chemprop compatible dataset.
         """
-        if (not os.path.exists(self.chemprop_dataset_path) or 
-            (self.simulation_type != 'smiles' and not os.path.exists(self.chemprop_feature_file_path))
-            ) or force:
-            dataframe = self.load()
-            rxn_mapper = RXNMapper()
+        # if force or \
+        #    not os.path.exists(self.chemprop_dataset_path) or \
+        #    (self.simulation_type != 'smiles' and not os.path.exists(self.chemprop_feature_file_path)) or \
+        #    (self.__use_data_weights and not os.path.exists(self.chemprop_data_weights_path)):
+        #     dataframe = self.load()
+        #     rxn_mapper = RXNMapper()
 
-            if self.simulation_type == "smiles":
-                smiles = []
-                for _, row in tqdm(dataframe.iterrows(), total=len(dataframe), desc="Mapping rxn smiles.."):
-                    reaction_smiles = [f'{row["substrates"]}.[{SIMULATION_IDX_ATOM[row["simulation_idx"]]}]>>{row["products"]}']
-                    atom_mapped_reaction_smiles = rxn_mapper.get_attention_guided_atom_maps(reaction_smiles)[0]['mapped_rxn']
-                    smiles.append(atom_mapped_reaction_smiles)
-                dataframe['smiles'] = smiles
-                dataframe.to_csv(self.chemprop_dataset_path)
+        #     if self.simulation_type == "smiles":
+        #         smiles = []
+        #         for _, row in tqdm(dataframe.iterrows(), total=len(dataframe), desc="Mapping rxn smiles.."):
+        #             reaction_smiles = [f'{row["substrates"]}.[{SIMULATION_IDX_ATOM[row["simulation_idx"]]}]>>{row["products"]}']
+        #             atom_mapped_reaction_smiles = rxn_mapper.get_attention_guided_atom_maps(reaction_smiles)[0]['mapped_rxn']
+        #             smiles.append(atom_mapped_reaction_smiles)
+        #         dataframe['smiles'] = smiles
+        #         dataframe.to_csv(self.chemprop_dataset_path)
 
-            elif self.simulation_type == "index_feature":
-                smiles = []
-                simulation_idxs = []
-                for _, row in tqdm(dataframe.iterrows(), total=len(dataframe), desc="Mapping rxn smiles.."):
-                    simulation_idxs.append(row["simulation_idx"])
-                    reaction_smiles = [f'{row["substrates"]}>>{row["products"]}']
-                    atom_mapped_reaction_smiles = rxn_mapper.get_attention_guided_atom_maps(reaction_smiles)[0]['mapped_rxn']
-                    smiles.append(atom_mapped_reaction_smiles)
-                dataframe['smiles'] = smiles
-                dataframe.to_csv(self.chemprop_dataset_path)
+        #     elif self.simulation_type == "index_feature":
+        #         smiles = []
+        #         simulation_idxs = []
+        #         weights = []
+        #         for _, row in tqdm(dataframe.iterrows(), total=len(dataframe), desc="Mapping rxn smiles.."):
+        #             simulation_idxs.append(row["simulation_idx"])
+        #             reaction_smiles = [f'{row["substrates"]}>>{row["products"]}']
+        #             atom_mapped_reaction_smiles = rxn_mapper.get_attention_guided_atom_maps(reaction_smiles)[0]['mapped_rxn']
+        #             smiles.append(atom_mapped_reaction_smiles)
 
-                feat_dataframe = pd.DataFrame()
-                feat_dataframe['smiles'] = smiles
-                descriptors = []
-                for idx, smiles in enumerate(smiles):
-                    smi_reac, smi_prod = smiles.split('>>')
-                    mol_reac, mol_prod = Chem.MolFromSmiles(smi_reac), Chem.MolFromSmiles(smi_prod)
-                    n_atoms = max(mol_reac.GetNumAtoms(), mol_prod.GetNumAtoms())
-                    descriptors.append([simulation_idxs[idx] for _ in range(n_atoms)])
-                feat_dataframe['descriptors'] = descriptors
-                feat_dataframe.to_csv(self.chemprop_feature_file_path)
+        #             if self.__use_data_weights:
+        #                 weights.append(
+        #                     self.data_weights[row["simulation_idx"]]
+        #                 )
+                
+        #         dataframe['smiles'] = smiles
+        #         dataframe.to_csv(self.chemprop_dataset_path)
 
-            elif self.simulation_type == "outcome_feature":
-                reaction_smiles = [
-                    f'{row["substrates"]}>>{row["products"]}' for _, row in dataframe.iterrows()
-                ]
-                dataframe['_reaction_smiles'] = reaction_smiles                
-                exp_dataframe = dataframe[dataframe['simulation_idx'] == 0]
+        #         if self.__use_data_weights:
+        #             pd.DataFrame({'weights': weights}).to_csv(self.chemprop_data_weights_path, index=False)
+
+        #         feat_dataframe = pd.DataFrame()
+        #         feat_dataframe['smiles'] = smiles
+        #         descriptors = []
+        #         for idx, smiles in enumerate(smiles):
+        #             smi_reac, smi_prod = smiles.split('>>')
+        #             mol_reac, mol_prod = Chem.MolFromSmiles(smi_reac), Chem.MolFromSmiles(smi_prod)
+        #             n_atoms = max(mol_reac.GetNumAtoms(), mol_prod.GetNumAtoms())
+        #             descriptors.append([simulation_idxs[idx] for _ in range(n_atoms)])
+        #         feat_dataframe['descriptors'] = descriptors
+        #         feat_dataframe.to_csv(self.chemprop_feature_file_path)
+
+        #     elif self.simulation_type == "outcome_feature":
+        #         reaction_smiles = [
+        #             f'{row["substrates"]}>>{row["products"]}' for _, row in dataframe.iterrows()
+        #         ]
+        #         dataframe['_reaction_smiles'] = reaction_smiles                
+        #         exp_dataframe = dataframe[dataframe['simulation_idx'] == 0]
 
 
-                am_reaction_smiles_list = []
-                reaction_smiles_list = []
-                for reaction_smiles in tqdm(exp_dataframe['_reaction_smiles'], total=len(exp_dataframe), desc="Mapping rxn smiles.."):
-                    am_reaction_smiles = rxn_mapper.get_attention_guided_atom_maps([reaction_smiles])[0]['mapped_rxn']
-                    am_reaction_smiles_list.append(am_reaction_smiles)
-                    reaction_smiles_list.append(reaction_smiles)
-                exp_dataframe['smiles'] = am_reaction_smiles_list
-                exp_dataframe.to_csv(self.chemprop_dataset_path)
+        #         am_reaction_smiles_list = []
+        #         reaction_smiles_list = []
+        #         for reaction_smiles in tqdm(exp_dataframe['_reaction_smiles'], total=len(exp_dataframe), desc="Mapping rxn smiles.."):
+        #             am_reaction_smiles = rxn_mapper.get_attention_guided_atom_maps([reaction_smiles])[0]['mapped_rxn']
+        #             am_reaction_smiles_list.append(am_reaction_smiles)
+        #             reaction_smiles_list.append(reaction_smiles)
+        #         exp_dataframe['smiles'] = am_reaction_smiles_list
+        #         exp_dataframe.to_csv(self.chemprop_dataset_path)
 
-                feat_dataframe = pd.DataFrame()
-                feat_dataframe['smiles'] = am_reaction_smiles_list
-                for sim_idx in range(1, int(max(dataframe['simulation_idx']) + 1)):
-                    selection = dataframe[dataframe['simulation_idx'] == sim_idx]
-                    descriptors = []
-                    for reaction_smiles in reaction_smiles_list:
-                        try:
-                            label = selection[selection['_reaction_smiles'] == reaction_smiles]['label'].values[0]
-                        except:
-                            label = 2
-                        smi_reac, smi_prod = reaction_smiles.split('>>')
-                        mol_reac, mol_prod = Chem.MolFromSmiles(smi_reac), Chem.MolFromSmiles(smi_prod)
-                        n_atoms = max(mol_reac.GetNumAtoms(), mol_prod.GetNumAtoms())
-                        descriptors.append([label for _ in range(n_atoms)])
-                    feat_dataframe[f'descriptors_{sim_idx}'] = descriptors
-                feat_dataframe.to_csv(self.chemprop_feature_file_path)
+        #         feat_dataframe = pd.DataFrame()
+        #         feat_dataframe['smiles'] = am_reaction_smiles_list
+        #         for sim_idx in range(1, int(max(dataframe['simulation_idx']) + 1)):
+        #             selection = dataframe[dataframe['simulation_idx'] == sim_idx]
+        #             descriptors = []
+        #             for reaction_smiles in reaction_smiles_list:
+        #                 try:
+        #                     label = selection[selection['_reaction_smiles'] == reaction_smiles]['label'].values[0]
+        #                 except:
+        #                     label = 2
+        #                 smi_reac, smi_prod = reaction_smiles.split('>>')
+        #                 mol_reac, mol_prod = Chem.MolFromSmiles(smi_reac), Chem.MolFromSmiles(smi_prod)
+        #                 n_atoms = max(mol_reac.GetNumAtoms(), mol_prod.GetNumAtoms())
+        #                 descriptors.append([label for _ in range(n_atoms)])
+        #             feat_dataframe[f'descriptors_{sim_idx}'] = descriptors
+        #         feat_dataframe.to_csv(self.chemprop_feature_file_path)
 
         self.__chemprop_generated = True

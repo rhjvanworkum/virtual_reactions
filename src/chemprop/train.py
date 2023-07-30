@@ -71,7 +71,7 @@ def train_and_evaluate_chemprop_model(
             other_args=other_training_args,
             use_features=use_features,
         )
-        cross_validate(args=training_args, train_func=run_training, scheduler_fn=scheduler_fn)
+        cross_validate(args=training_args, train_func=run_training) # , scheduler_fn=scheduler_fn)
 
         if use_wandb:
             wandb.finish()

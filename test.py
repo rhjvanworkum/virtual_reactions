@@ -1,16 +1,7 @@
-import numpy as np
-from ase.db import connect
 
-split = np.load('./data/ani-cxx/experiment_3/splits/cc_5_dft_0.npz')
-idxs = split["ood_test_idx"]
+a = [1, 2, 3, 1]
 
-with connect('./data/ani-cxx/experiment_3/dataset.db') as conn:
-    for idx in idxs:
-        row = conn.get(int(idx + 1))
-        # print(row)
-    
-
-
+print(a.index(1))
 
 
 

@@ -26,6 +26,7 @@ def train_and_evaluate_chemprop_vr_model(
     base_dir: os.path,
     other_training_args: Dict[str, str],
     other_prediction_args: Dict[str, str],
+    use_data_weights: bool,
     task: Literal["classification", "regression"] = "classification",
     force_dataset_generation: bool = False,
     scheduler_fn: Optional[Callable] = None
@@ -61,6 +62,7 @@ def train_and_evaluate_chemprop_vr_model(
             dataset=dataset,
             dataset_split=dataset_split,
             random_seed=random_seed,
+            use_data_weights=use_data_weights
         )
 
         # 2. Perform training
@@ -72,8 +74,9 @@ def train_and_evaluate_chemprop_vr_model(
             random_seed=random_seed,
             other_args=other_training_args,
             use_features=use_features,
+            use_data_weights=use_data_weights
         )
-        cross_validate(args=training_args, train_func=run_training, scheduler_fn=scheduler_fn)
+        cross_validate(args=training_args, train_func=run_training) # , scheduler_fn=scheduler_fn)
         
 
         # 3. Evaluate model

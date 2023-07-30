@@ -22,15 +22,22 @@ if __name__ == "__main__":
     
     training_args = {
         'epochs': config.get('epochs'),
-        'hidden_size': 64,
-        'ffn_hidden_size': 64,
+        # 'hidden_size': 512,
+        # 'ffn_hidden_size': 512,
+        # 'depth': 4
+        # 'hidden_size': 128,
+        # 'ffn_hidden_size': 128,
     }
+
+    # data_weights = [1.0, 0.1, 0.1, 0.1, 0.1]
+    data_weights = None
 
     # create and load dataset class
     dataset_class = dataset_class_dict[config.get('dataset_type')]
     dataset = dataset_class(
         folder_path=config.get('folder_path'),
-        simulation_type=config.get('simulation_type')
+        simulation_type=config.get('simulation_type'),
+        data_weights=data_weights
     )
     if config.get('dataset_type') == 'ff' or config.get('dataset_type') == 'xtb':
         source_data = dataset.load(
@@ -78,5 +85,7 @@ if __name__ == "__main__":
         dataset_split=dataset_split,
         base_dir=base_dir,
         other_training_args=training_args,
-        other_prediction_args={}
+        other_prediction_args={},
+        use_data_weights=(data_weights is not None),
+        force_dataset_generation=True
     )

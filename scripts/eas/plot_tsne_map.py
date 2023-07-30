@@ -34,7 +34,7 @@ def _compute_single_ecfp_descriptor(smiles: str):
 
 fig, ax = plt.subplots(ncols=2, nrows=2, figsize=(8, 5))
 
-df = pd.read_csv('./data/eas/eas_dataset_fingerprint_simulated_whole/dataset.csv')
+df = pd.read_csv('./data/eas/xtb_match_random_simulated_dataset/dataset.csv')
 
 source_data = df[df['simulation_idx'] == 0]['substrates'].unique()
 ecfp_descriptors, keep_idx = compute_ecfp_descriptors(source_data)
@@ -56,6 +56,11 @@ axis = [ax[0,0], ax[0,1], ax[1,0], ax[1,1]]
 for i in range(1,5):
     source_df = df[df['simulation_idx'] == 0]
     sim_df = df[df['simulation_idx'] == i]
+
+    print(
+        source_df['reaction_idx'].values, 
+        sim_df['reaction_idx'].values
+    )
 
     assert np.array_equal(source_df['reaction_idx'].values, sim_df['reaction_idx'].values)
 
@@ -80,7 +85,7 @@ for i in range(1,5):
     )
     g.legend([],[], frameon=False)
 
-plt.savefig(f'map.png')
+plt.savefig(f'map_match.png')
 
 # print(X_tsne.shape)
 # bbbp["TNSE_0"], bbbp["TNSE_1"] = X_tsne[:,0], X_tsne[:,1]

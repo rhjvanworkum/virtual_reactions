@@ -1,4 +1,5 @@
 import os
+import shutil
 import pandas as pd
 from src.data.datasets.dataset import Dataset
 from src.data.splits import Split
@@ -16,6 +17,7 @@ def prepare_csv_files_for_chemprop(
     dataset: Dataset,
     dataset_split: Split,
     random_seed: int = 420,
+    use_data_weights: bool = False
 ):
     # splits
     train_uids, val_uids, ood_test_uids, iid_test_uids, virtual_test_uids = dataset_split.generate_splits(source_data, random_seed)
@@ -35,6 +37,12 @@ def prepare_csv_files_for_chemprop(
             features = dataset.load_chemprop_features(uids=uids)
             np.savez(data_file_path, *features)
 
+    if use_data_weights:
+        shutil.copy2(
+            dataset.chemprop_data_weights_path,
+            os.path.join(base_dir, 'train_data_weights.csv')
+        )
+
 
 
 def make_chemprop_training_args(
@@ -45,6 +53,7 @@ def make_chemprop_training_args(
     random_seed: int = 420,
     other_args: Dict = {},
     use_features: bool = False,
+    use_data_weights: bool = False
 ):
     args = {
         # reaction graph
@@ -53,6 +62,10 @@ def make_chemprop_training_args(
         # smiles/target columns
         "smiles_columns": "smiles",
         "target_columns": "label",
+
+        # TODO: formalize this?
+        # "ensemble_size": 4,
+
         # data paths
         "data_path": os.path.join(base_dir, 'train_data.csv'),
         "separate_val_path": os.path.join(base_dir, 'val_data.csv'),
@@ -78,10 +91,14 @@ def make_chemprop_training_args(
         setattr(args, key, value)
 
     if use_features:
-        args.atom_descriptors = "descriptor"
+        args.atom_descriptors = "features"
+        args.no_atom_descriptor_scaling = True
         args.atom_descriptors_path = os.path.join(base_dir, 'train_feat.npz')
         args.separate_val_atom_descriptors_path = os.path.join(base_dir, 'val_feat.npz')
         args.separate_test_atom_descriptors_path = os.path.join(base_dir, 'ood_test_feat.npz')
+
+    if use_data_weights:
+        args.data_weights_path = os.path.join(base_dir, 'train_data_weights.csv')
 
     return args
 
@@ -118,7 +135,8 @@ def make_chemprop_predict_args(
         setattr(args, key, value)
 
     if use_features:
-        args.atom_descriptors = "descriptor"
+        args.atom_descriptors = "features"
+        args.no_atom_descriptor_scaling = True
         args.atom_descriptors_path = atom_descriptor_path
     
     return args

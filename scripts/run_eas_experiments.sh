@@ -309,3 +309,46 @@ source env.sh
 # python scripts/train_reaction_model.py --name local_xtb_sim_whole_non_trans_butina_2400 --project eas_exp_2 --dataset_type dataset \
 #     --folder_path eas/eas_dataset_fingerprint_xtb_simulated_whole/ --simulation_type index_feature --split_type fp_vr --transductive False \
 #     --clustering_method Butina --n_ood_test_compounds 2400
+
+
+
+
+
+
+# python scripts/train_reaction_model.py --name random_baseline_butina_100 --project eas_exp_2 --dataset_type dataset \
+#     --folder_path eas/random_simulated_dataset/ --simulation_type index_feature --split_type fp_vr --transductive True \
+#     --clustering_method Butina --n_ood_test_compounds 100
+# python scripts/train_reaction_model.py --name random_baseline_butina_800 --project eas_exp_2 --dataset_type dataset \
+#     --folder_path eas/random_simulated_dataset/ --simulation_type index_feature --split_type fp_vr --transductive True \
+#     --clustering_method Butina --n_ood_test_compounds 800
+# python scripts/train_reaction_model.py --name random_baseline_butina_1800 --project eas_exp_2 --dataset_type dataset \
+#     --folder_path eas/random_simulated_dataset/ --simulation_type index_feature --split_type fp_vr --transductive True \
+#     --clustering_method Butina --n_ood_test_compounds 1800
+# python scripts/train_reaction_model.py --name random_baseline_butina_2400 --project eas_exp_2 --dataset_type dataset \
+#     --folder_path eas/random_simulated_dataset/ --simulation_type index_feature --split_type fp_vr --transductive True \
+#     --clustering_method Butina --n_ood_test_compounds 2400
+
+
+# python scripts/train_reaction_model.py --name new_random_xtb_baseline_butina_100 --project eas_exp_2 --dataset_type dataset \
+#     --folder_path eas/xtb_random_simulated_dataset/ --simulation_type index_feature --split_type fp_vr --transductive True \
+#     --clustering_method Butina --n_ood_test_compounds 100
+# python scripts/train_reaction_model.py --name new_random_xtb_baseline_butina_800 --project eas_exp_2 --dataset_type dataset \
+#     --folder_path eas/xtb_random_simulated_dataset/ --simulation_type index_feature --split_type fp_vr --transductive True \
+#     --clustering_method Butina --n_ood_test_compounds 800
+
+# python scripts/train_reaction_model.py --name new_ensemble_test --project eas_exp_2 --dataset_type dataset \
+#     --folder_path eas/eas_dataset/ --simulation_type index_feature --split_type fp_vr --transductive True \
+#     --clustering_method Butina --n_ood_test_compounds 1800
+
+# python scripts/train_reaction_model.py --name new_random_xtb_baseline_butina_1800 --project eas_exp_2 --dataset_type dataset \
+#     --folder_path eas/new_random_simulated_dataset/ --simulation_type index_feature --split_type fp_vr --transductive True \
+#     --clustering_method Butina --n_ood_test_compounds 1800
+
+# python scripts/train_reaction_model.py --name testjjee --project eas_exp_2 --dataset_type dataset \
+#     --folder_path eas/xtb_match_random_simulated_dataset/ --simulation_type index_feature --split_type fp_vr --transductive True \
+#     --clustering_method Butina --n_ood_test_compounds 1800
+
+
+python scripts/train_reaction_model.py --name new_testje_50 --project eas_exp_2 --dataset_type dataset \
+    --folder_path eas/xtb_random_simulated_dataset/ --simulation_type index_feature --split_type fp_vr --transductive True \
+    --clustering_method Butina --n_ood_test_compounds 50
