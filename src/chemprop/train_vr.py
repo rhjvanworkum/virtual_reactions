@@ -100,12 +100,15 @@ def train_and_evaluate_chemprop_vr_model(
 
                 # total roc auc
                 if len(true_df['label'].values) > 0 and len(pred_df['label'].values) > 0:
-                    tot_auc_list.append(
-                        roc_auc_score(
-                            true_df['label'].values, 
-                            pred_df['label'].values
+                    try:
+                        tot_auc_list.append(
+                            roc_auc_score(
+                                true_df['label'].values, 
+                                pred_df['label'].values
+                            )
                         )
-                    )
+                    except:
+                        print('AUROC failed!!')
 
                 # virtual reaction specific roc auc
                 for simulation_idx in range(max_simulation_idx):
@@ -136,7 +139,10 @@ def train_and_evaluate_chemprop_vr_model(
                 targets.append(target.values[0])
                 preds.append(pred.values[0])
 
-        simulation_auc.append(roc_auc_score(targets, preds))
+        try:
+            simulation_auc.append(roc_auc_score(targets, preds))
+        except: 
+            print('AUROC failed!!')
 
     # save raw metrics and log important ones
     simulation_auc = np.array(simulation_auc)

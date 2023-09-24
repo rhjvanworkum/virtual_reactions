@@ -11,11 +11,14 @@ def parse_chemprop_arguments():
     parser.add_argument("--n_replications", type=int)
     parser.add_argument("--epochs", type=int)
     parser.add_argument("--use_features", type=bool)
+    parser.add_argument("--ensemble_size", type=int)
 
     parser.add_argument("--dataset_type", type=str)
     parser.add_argument("--folder_path", type=str)
     parser.add_argument("--simulation_type", type=str)
 
+    parser.add_argument("--train_subset", type=float)
+    parser.add_argument("--ood_subset", type=float)
     parser.add_argument("--split_type", type=str)
     parser.add_argument("--transductive", type=bool)
     parser.add_argument("--clustering_method", type=str)

@@ -7,6 +7,7 @@ use_wandb: False
 n_replications: 2
 epochs: 100
 use_features: True
+ensemble_size: 1
 
 # dataset
 dataset_type: dataset
@@ -14,6 +15,8 @@ folder_path: "eas/eas_dataset"
 simulation_type: "index_feature"
 
 # split
+train_subset: 1.0
+ood_subset: 1.0
 split_type: random
 transductive: True
 clustering_method: Butina

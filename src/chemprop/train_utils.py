@@ -63,9 +63,6 @@ def make_chemprop_training_args(
         "smiles_columns": "smiles",
         "target_columns": "label",
 
-        # TODO: formalize this?
-        # "ensemble_size": 4,
-
         # data paths
         "data_path": os.path.join(base_dir, 'train_data.csv'),
         "separate_val_path": os.path.join(base_dir, 'val_data.csv'),

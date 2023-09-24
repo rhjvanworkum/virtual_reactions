@@ -29,14 +29,25 @@ def _select_clusters(
     clusters: List[List[str]],
     n_compounds: int,
 ) -> List[List[str]]:
+    # current_clusters = list(clusters).copy()
+    # selected_clusters = []
+
+    # while sum(len(clu) for clu in selected_clusters) < n_compounds:
+    #     idx = random.sample(np.arange(len(current_clusters)).tolist(), 1)[0]
+    #     selected_clusters.append(current_clusters.pop(idx))
+
+    # return selected_clusters
     current_clusters = list(clusters).copy()
     selected_clusters = []
 
     while sum(len(clu) for clu in selected_clusters) < n_compounds:
         idx = random.sample(np.arange(len(current_clusters)).tolist(), 1)[0]
-        selected_clusters.append(current_clusters.pop(idx))
+
+        if sum(len(clu) for clu in selected_clusters) + len(current_clusters[idx]) <= n_compounds:
+            selected_clusters.append(current_clusters.pop(idx))
 
     return selected_clusters
+
 
 
 class FingerprintVirtualReactionSplit(VirtualReactionSplit):
@@ -45,6 +56,8 @@ class FingerprintVirtualReactionSplit(VirtualReactionSplit):
         self,
         train_split: Union[float, int] = 0.9,
         val_split: Union[float, int] = 0.1,
+        train_subset: float = 1.0,
+        ood_subset: float = 1.0,
         iid_test_split: float = 0.05,
         virtual_test_split: float = 0.05,
         transductive: bool = True,
@@ -58,6 +71,11 @@ class FingerprintVirtualReactionSplit(VirtualReactionSplit):
         self.train_split = train_split
         self.val_split = val_split
         assert self.train_split + self.val_split == 1
+
+        self.train_subset = train_subset
+        self.ood_subset = ood_subset
+        assert self.train_subset <= 1
+        assert self.ood_subset <= 1
 
         self.iid_test_split = iid_test_split
         self.virtual_test_split = virtual_test_split
@@ -103,7 +121,7 @@ class FingerprintVirtualReactionSplit(VirtualReactionSplit):
 
             # if isinstance(test_clusters, bool):
             #     test_clusters = _select_clusters(clusters, self.n_ood_test_compounds)
-            test_clusters = select_clusters(clusters, self.n_ood_test_compounds)
+            test_clusters = _select_clusters(clusters, self.n_ood_test_compounds)
 
             print(type(test_clusters))
 
@@ -200,6 +218,14 @@ class FingerprintVirtualReactionSplit(VirtualReactionSplit):
         virtual_test_set_uids = self._get_virtual_test_set_uids(products, uids, simulation_idxs)
         excluded_set_uids = self._get_excluded_set_uids(products, list(filter(lambda x: x not in virtual_test_set_uids, uids)), simulation_idxs, data)
 
+        if self.ood_subset < 1:
+            ood_subset_idxs = np.arange(len(ood_test_set_uids))
+            np.random.shuffle(ood_subset_idxs)
+            ood_idxs = ood_subset_idxs[:int(self.ood_subset * len(ood_subset_idxs))]
+            excluded_idxs = ood_subset_idxs[int(self.ood_subset * len(ood_subset_idxs)):]
+            excluded_set_uids = np.concatenate((excluded_set_uids, ood_test_set_uids[excluded_idxs]))
+            ood_test_set_uids = ood_test_set_uids[ood_idxs]
+
         left_over_uids = np.array([
             id for id in uids if (
                 (id not in ood_test_set_uids) and 
@@ -210,9 +236,10 @@ class FingerprintVirtualReactionSplit(VirtualReactionSplit):
         ])
         data_idxs = np.arange(len(left_over_uids))
         np.random.shuffle(data_idxs)
+        data_idxs = np.random.choice(data_idxs, size=int(self.train_subset * len(data_idxs)), replace=False)
         if isinstance(self.train_split, float) and isinstance(self.val_split, float):
-            train_idxs = data_idxs[:int(self.train_split * len(left_over_uids))]
-            val_idxs = data_idxs[int(self.train_split * len(left_over_uids)):]
+            train_idxs = data_idxs[:int(self.train_split * len(data_idxs))]
+            val_idxs = data_idxs[int(self.train_split * len(data_idxs)):]
         elif isinstance(self.train_split, int) and isinstance(self.val_split, int):
             train_idxs = data_idxs[:self.train_split]
             val_idxs = data_idxs[self.train_split:(self.train_split + self.val_split)]
